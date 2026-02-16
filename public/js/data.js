@@ -78,10 +78,13 @@ const SEED_CHOCOLATES = [
 ];
 
 const GELATO_SIZES = [
-  { id: '240ml', name: '240 Ml', balls: 1, price: 14.00 },
-  { id: '500ml', name: '500 Ml', balls: 2, price: 22.00 },
-  { id: '600g', name: '600 Gramas', balls: 3, price: 28.00 },
-  { id: '1kg', name: '1 Kg', balls: 5, price: 45.00 },
+  { id: 'P', name: 'Pequeno', maxFlavors: 1, price: 10.00 },
+  { id: 'M', name: 'Medio', maxFlavors: 2, price: 16.00 },
+  { id: 'G', name: 'Grande', maxFlavors: 3, price: 22.00 },
+  { id: '240ml', name: '240 Ml', maxFlavors: 2, price: 14.00 },
+  { id: '500ml', name: '500 Ml', maxFlavors: 3, price: 22.00 },
+  { id: '600g', name: '600 Gramas', maxFlavors: 4, price: 28.00 },
+  { id: '1kg', name: '1 Kg', maxFlavors: 5, price: 45.00 },
 ];
 
 const CHOCOLATE_BOXES = [
