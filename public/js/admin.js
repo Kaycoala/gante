@@ -56,8 +56,10 @@ function initDashboard() {
   initMobileSidebar();
   renderGelatoTable();
   renderChocolateTable();
+  renderDiversosTable();
   renderCategoryTables();
   initProductModal();
+  initDiversosModal();
   initCategoryModal();
   initDeleteModal();
   initSearch();
@@ -220,6 +222,49 @@ function renderChocolateTable(search = '') {
   }
 }
 
+// ---- Diversos Table ----
+function renderDiversosTable(search = '') {
+  const tbody = document.getElementById('diversosTableBody');
+  let products = getProducts('diversos');
+
+  if (search) {
+    const s = search.toLowerCase();
+    products = products.filter(p => p.name.toLowerCase().includes(s) || p.description.toLowerCase().includes(s));
+  }
+
+  tbody.innerHTML = products.map(p => {
+    const hasImg = p.imageUrl && p.imageUrl.length > 0;
+    const hue = hashStringToHue(p.name);
+    return `
+      <tr>
+        <td>
+          <div style="display:flex; align-items:center; gap:10px;">
+            ${hasImg
+              ? `<img class="admin-product-thumb" src="${p.imageUrl}" alt="${p.name}">`
+              : `<span class="admin-product-thumb-placeholder" style="background:hsl(${hue}, 25%, 78%)">${p.name.charAt(0)}</span>`
+            }
+            <strong>${p.name}</strong>
+          </div>
+        </td>
+        <td style="max-width:300px; font-size:0.85rem; color:rgba(15,59,46,0.6);">${p.description || ''}</td>
+        <td style="font-weight:600;">${formatPrice(p.price)}</td>
+        <td class="actions">
+          <button class="btn-edit" onclick="editDiversos('${p.id}')">Editar</button>
+          <button class="btn-delete" onclick="requestDelete('product', 'diversos', '${p.id}', '${p.name}')">Excluir</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  if (products.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:32px; color:rgba(15,59,46,0.4);">Nenhum item diverso encontrado.</td></tr>';
+  }
+}
+
+function editDiversos(id) {
+  openDiversosModal(id);
+}
+
 // ---- Category Tables ----
 function renderCategoryTables() {
   renderCatTable('gelato', 'gelatoCatBody');
@@ -258,12 +303,16 @@ function initSearch() {
   document.getElementById('chocolateSearch').addEventListener('input', (e) => {
     renderChocolateTable(e.target.value);
   });
+  document.getElementById('diversosSearch').addEventListener('input', (e) => {
+    renderDiversosTable(e.target.value);
+  });
 }
 
 // ---- Add Buttons ----
 function initAddButtons() {
   document.getElementById('addGelatoBtn').addEventListener('click', () => openProductModal('gelato'));
   document.getElementById('addChocolateBtn').addEventListener('click', () => openProductModal('chocolate'));
+  document.getElementById('addDiversosBtn').addEventListener('click', () => openDiversosModal());
   document.getElementById('addGelatoCatBtn').addEventListener('click', () => openCategoryModal('gelato'));
   document.getElementById('addChocoCatBtn').addEventListener('click', () => openCategoryModal('chocolate'));
 }
@@ -329,7 +378,7 @@ function openProductModal(type, productId = null) {
   if (productId) {
     const product = getProductById(type, productId);
     if (!product) return;
-    title.textContent = 'Editar ' + (type === 'gelato' ? 'Gelato' : 'Chocolate');
+    title.textContent = 'Editar ' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : 'Produto');
     document.getElementById('prodEditId').value = product.id;
     document.getElementById('prodName').value = product.name;
     document.getElementById('prodDescription').value = product.description;
@@ -350,7 +399,7 @@ function openProductModal(type, productId = null) {
       };
     }
   } else {
-    title.textContent = 'Novo ' + (type === 'gelato' ? 'Gelato' : 'Chocolate');
+    title.textContent = 'Novo ' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : 'Produto');
     document.getElementById('prodEditId').value = '';
     form.reset();
   }
@@ -360,6 +409,73 @@ function openProductModal(type, productId = null) {
 
 function editProduct(type, id) {
   openProductModal(type, id);
+}
+
+// ---- Diversos Modal ----
+function initDiversosModal() {
+  const modal = document.getElementById('diversosModal');
+  const closeBtn = document.getElementById('diversosModalClose');
+  const form = document.getElementById('diversosForm');
+
+  closeBtn.addEventListener('click', () => closeModal('diversosModal'));
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal('diversosModal');
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const editId = document.getElementById('divEditId').value;
+
+    const imageFile = document.getElementById('divImageFile').value.trim();
+    const imageUrl = imageFile ? 'images/produtos/' + imageFile : '';
+
+    const productData = {
+      name: document.getElementById('divName').value.trim(),
+      description: document.getElementById('divDescription').value.trim(),
+      price: parseFloat(document.getElementById('divPrice').value),
+      type: 'diversos',
+      imageUrl: imageUrl,
+    };
+
+    if (editId) {
+      updateProduct('diversos', editId, productData);
+      showToast('Item diverso atualizado com sucesso!');
+    } else {
+      addProduct('diversos', productData);
+      showToast('Item diverso adicionado com sucesso!');
+    }
+
+    closeModal('diversosModal');
+    refreshTables();
+  });
+}
+
+function openDiversosModal(productId = null) {
+  const modal = document.getElementById('diversosModal');
+  const title = document.getElementById('diversosModalTitle');
+  const form = document.getElementById('diversosForm');
+
+  if (productId) {
+    const product = getProductById('diversos', productId);
+    if (!product) return;
+    title.textContent = 'Editar Item Diverso';
+    document.getElementById('divEditId').value = product.id;
+    document.getElementById('divName').value = product.name;
+    document.getElementById('divDescription').value = product.description;
+    document.getElementById('divPrice').value = product.price;
+    if (product.imageUrl) {
+      const filename = product.imageUrl.replace(/^images\/produtos\//, '');
+      document.getElementById('divImageFile').value = filename;
+    } else {
+      document.getElementById('divImageFile').value = '';
+    }
+  } else {
+    title.textContent = 'Novo Item Diverso';
+    document.getElementById('divEditId').value = '';
+    form.reset();
+  }
+
+  openModal('diversosModal');
 }
 
 // ---- Category Modal ----
@@ -466,6 +582,7 @@ function closeModal(id) {
 function refreshTables() {
   renderGelatoTable(document.getElementById('gelatoSearch').value);
   renderChocolateTable(document.getElementById('chocolateSearch').value);
+  renderDiversosTable(document.getElementById('diversosSearch').value);
   renderCategoryTables();
 }
 

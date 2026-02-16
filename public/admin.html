@@ -53,6 +53,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
           Chocolates
         </button>
+        <button class="admin-nav-item" data-view="diversos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+          Diversos
+        </button>
         <button class="admin-nav-item" data-view="categorias">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
           Categorias
@@ -117,6 +121,32 @@
               </tr>
             </thead>
             <tbody id="chocolateTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ---- DIVERSOS VIEW ---- -->
+      <div class="admin-view" id="viewDiversos" style="display:none;">
+        <div class="admin-header">
+          <h1>Diversos</h1>
+          <div class="admin-header-actions">
+            <button class="btn btn-primary btn-sm" id="addDiversosBtn">+ Novo Item</button>
+          </div>
+        </div>
+        <div class="admin-table-wrap">
+          <div class="admin-table-header">
+            <input type="text" class="admin-table-search" id="diversosSearch" placeholder="Buscar diversos...">
+          </div>
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Descricao</th>
+                <th>Preco</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody id="diversosTableBody"></tbody>
           </table>
         </div>
       </div>
@@ -204,6 +234,39 @@
           <div id="imagePreviewWrap" style="display:none; margin-top:12px; text-align:center;">
             <img id="imagePreview" alt="Preview" style="max-height:150px; border-radius:8px; margin:0 auto;">
           </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Salvar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== DIVERSOS MODAL ========== -->
+  <div class="modal-overlay" id="diversosModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="diversosModalTitle">Novo Item Diverso</h3>
+        <button class="modal-close" id="diversosModalClose" aria-label="Fechar">&times;</button>
+      </div>
+      <form class="admin-form" id="diversosForm">
+        <input type="hidden" id="divEditId">
+        <div class="form-group">
+          <label for="divName">Nome</label>
+          <input type="text" id="divName" placeholder="Nome do item" required>
+        </div>
+        <div class="form-group">
+          <label for="divDescription">Descricao</label>
+          <textarea id="divDescription" placeholder="Descricao do item" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="divPrice">Preco (R$)</label>
+          <input type="number" id="divPrice" step="0.01" min="0" placeholder="0.00" required>
+        </div>
+        <div class="form-group">
+          <label for="divImageFile">Arquivo da Imagem</label>
+          <input type="text" id="divImageFile" placeholder="Ex: casquinha.jpg">
+          <small style="display:block; margin-top:4px; color:rgba(15,59,46,0.5); font-size:0.8rem;">
+            Coloque a imagem na pasta <code style="background:rgba(232,217,197,0.5); padding:1px 6px; border-radius:3px;">images/produtos/</code> e digite o nome do arquivo.
+          </small>
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%;">Salvar</button>
       </form>

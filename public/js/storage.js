@@ -10,6 +10,7 @@
 const STORAGE_KEYS = {
   GELATOS: 'gante_gelatos',
   CHOCOLATES: 'gante_chocolates',
+  DIVERSOS: 'gante_diversos',
   GELATO_CATEGORIES: 'gante_gelato_categories',
   CHOCOLATE_CATEGORIES: 'gante_chocolate_categories',
   INITIALIZED: 'gante_initialized',
@@ -17,7 +18,7 @@ const STORAGE_KEYS = {
 
 // ---- Initialization ----
 // Versao dos dados - incrementar ao mudar estrutura para forcar re-seed
-const DATA_VERSION = '3';
+const DATA_VERSION = '4';
 
 function initData() {
   const currentVersion = localStorage.getItem('gante_data_version');
@@ -57,11 +58,28 @@ function initData() {
       }
     });
 
+    // Merge diversos
+    const existingDiversos = JSON.parse(localStorage.getItem(STORAGE_KEYS.DIVERSOS) || '[]');
+    const mergedDiversos = SEED_DIVERSOS.map(seed => {
+      const existing = existingDiversos.find(e => e.id === seed.id);
+      if (existing && existing.imageUrl) {
+        return { ...seed, imageUrl: existing.imageUrl };
+      }
+      return seed;
+    });
+    existingDiversos.forEach(e => {
+      if (!SEED_DIVERSOS.find(s => s.id === e.id)) {
+        mergedDiversos.push(e);
+      }
+    });
+
     localStorage.setItem(STORAGE_KEYS.GELATOS, JSON.stringify(mergedGelatos));
     localStorage.setItem(STORAGE_KEYS.CHOCOLATES, JSON.stringify(mergedChocolates));
+    localStorage.setItem(STORAGE_KEYS.DIVERSOS, JSON.stringify(mergedDiversos));
   } else {
     localStorage.setItem(STORAGE_KEYS.GELATOS, JSON.stringify(SEED_GELATOS));
     localStorage.setItem(STORAGE_KEYS.CHOCOLATES, JSON.stringify(SEED_CHOCOLATES));
+    localStorage.setItem(STORAGE_KEYS.DIVERSOS, JSON.stringify(SEED_DIVERSOS));
   }
 
   localStorage.setItem(STORAGE_KEYS.GELATO_CATEGORIES, JSON.stringify(GELATO_CATEGORIES));
@@ -112,7 +130,11 @@ function initData() {
 
 // ---- Products (LOCALSTORAGE) ----
 function getProducts(type) {
-  const key = type === 'gelato' ? STORAGE_KEYS.GELATOS : STORAGE_KEYS.CHOCOLATES;
+  let key;
+  if (type === 'gelato') key = STORAGE_KEYS.GELATOS;
+  else if (type === 'chocolate') key = STORAGE_KEYS.CHOCOLATES;
+  else if (type === 'diversos') key = STORAGE_KEYS.DIVERSOS;
+  else key = STORAGE_KEYS.GELATOS;
   const data = localStorage.getItem(key);
   return data ? JSON.parse(data) : [];
 }
@@ -152,7 +174,11 @@ function deleteProduct(type, id) {
 }
 
 function saveProducts(type, products) {
-  const key = type === 'gelato' ? STORAGE_KEYS.GELATOS : STORAGE_KEYS.CHOCOLATES;
+  let key;
+  if (type === 'gelato') key = STORAGE_KEYS.GELATOS;
+  else if (type === 'chocolate') key = STORAGE_KEYS.CHOCOLATES;
+  else if (type === 'diversos') key = STORAGE_KEYS.DIVERSOS;
+  else key = STORAGE_KEYS.GELATOS;
   localStorage.setItem(key, JSON.stringify(products));
 }
 

@@ -739,12 +739,14 @@ p {
 /* Size selector */
 .size-selector {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 24px;
 }
 
 .size-option {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 100px;
   padding: 16px;
   text-align: center;
   border: 2px solid rgba(var(--color-cream-rgb), 0.8);
@@ -849,6 +851,61 @@ p {
   height: 14px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+/* Flavor Select Item (toggle simples para gelato) */
+.flavor-select-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1.5px solid rgba(var(--color-cream-rgb), 0.8);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.flavor-select-item:hover {
+  border-color: var(--color-gold);
+  background: rgba(var(--color-gold-rgb), 0.05);
+}
+
+.flavor-select-item.selected {
+  border-color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb), 0.05);
+}
+
+.flavor-select-item.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.flavor-select-check {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(var(--color-primary-rgb), 0.3);
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.flavor-select-item.selected .flavor-select-check {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.flavor-select-item.selected .flavor-select-check::after {
+  content: '';
+  width: 10px;
+  height: 6px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) translateY(-1px);
 }
 
 /* Chocolate Choice Item (com quantidade) */
