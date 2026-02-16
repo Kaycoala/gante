@@ -1,12 +1,12 @@
 // ============================================
-// GANTE — Admin Dashboard Logic
+// GANTE — Admin Dashboard Logic (Supabase)
 // ============================================
 
 const ADMIN_PASSWORD = 'gante2024';
 let pendingDelete = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-  initData();
+document.addEventListener('DOMContentLoaded', async () => {
+  await initData();
   initLogin();
   checkAuth();
 });
@@ -51,13 +51,13 @@ function logout() {
 }
 
 // ---- Dashboard Init ----
-function initDashboard() {
+async function initDashboard() {
   initSidebarNav();
   initMobileSidebar();
-  renderGelatoTable();
-  renderChocolateTable();
-  renderDiversosTable();
-  renderCategoryTables();
+  await renderGelatoTable();
+  await renderChocolateTable();
+  await renderDiversosTable();
+  await renderCategoryTables();
   initProductModal();
   initDiversosModal();
   initCategoryModal();
@@ -141,10 +141,10 @@ function hashStringToHue(str) {
 }
 
 // ---- Gelato Table ----
-function renderGelatoTable(search = '') {
+async function renderGelatoTable(search = '') {
   const tbody = document.getElementById('gelatoTableBody');
-  let products = getProducts('gelato');
-  const categories = getCategories('gelato');
+  let products = await getProducts('gelato');
+  const categories = await getCategories('gelato');
 
   if (search) {
     const s = search.toLowerCase();
@@ -182,10 +182,10 @@ function renderGelatoTable(search = '') {
 }
 
 // ---- Chocolate Table ----
-function renderChocolateTable(search = '') {
+async function renderChocolateTable(search = '') {
   const tbody = document.getElementById('chocolateTableBody');
-  let products = getProducts('chocolate');
-  const categories = getCategories('chocolate');
+  let products = await getProducts('chocolate');
+  const categories = await getCategories('chocolate');
 
   if (search) {
     const s = search.toLowerCase();
@@ -223,9 +223,9 @@ function renderChocolateTable(search = '') {
 }
 
 // ---- Diversos Table ----
-function renderDiversosTable(search = '') {
+async function renderDiversosTable(search = '') {
   const tbody = document.getElementById('diversosTableBody');
-  let products = getProducts('diversos');
+  let products = await getProducts('diversos');
 
   if (search) {
     const s = search.toLowerCase();
@@ -266,15 +266,15 @@ function editDiversos(id) {
 }
 
 // ---- Category Tables ----
-function renderCategoryTables() {
-  renderCatTable('gelato', 'gelatoCatBody');
-  renderCatTable('chocolate', 'chocoCatBody');
+async function renderCategoryTables() {
+  await renderCatTable('gelato', 'gelatoCatBody');
+  await renderCatTable('chocolate', 'chocoCatBody');
 }
 
-function renderCatTable(type, bodyId) {
+async function renderCatTable(type, bodyId) {
   const tbody = document.getElementById(bodyId);
-  const categories = getCategories(type);
-  const products = getProducts(type);
+  const categories = await getCategories(type);
+  const products = await getProducts(type);
 
   tbody.innerHTML = categories.map(c => {
     const count = products.filter(p => p.category === c.id).length;
@@ -328,7 +328,7 @@ function initProductModal() {
     if (e.target === modal) { closeModal('productModal'); resetImageUpload(); }
   });
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const editId = document.getElementById('prodEditId').value;
     const type = document.getElementById('prodEditType').value;
@@ -347,20 +347,20 @@ function initProductModal() {
     };
 
     if (editId) {
-      updateProduct(type, editId, productData);
+      await updateProduct(type, editId, productData);
       showToast('Produto atualizado com sucesso!');
     } else {
-      addProduct(type, productData);
+      await addProduct(type, productData);
       showToast('Produto adicionado com sucesso!');
     }
 
     closeModal('productModal');
     resetImageUpload();
-    refreshTables();
+    await refreshTables();
   });
 }
 
-function openProductModal(type, productId = null) {
+async function openProductModal(type, productId = null) {
   const modal = document.getElementById('productModal');
   const title = document.getElementById('productModalTitle');
   const form = document.getElementById('productForm');
@@ -370,13 +370,13 @@ function openProductModal(type, productId = null) {
   resetImageUpload();
 
   // Populate categories
-  const categories = getCategories(type);
+  const categories = await getCategories(type);
   categorySelect.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 
   document.getElementById('prodEditType').value = type;
 
   if (productId) {
-    const product = getProductById(type, productId);
+    const product = await getProductById(type, productId);
     if (!product) return;
     title.textContent = 'Editar ' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : 'Produto');
     document.getElementById('prodEditId').value = product.id;
@@ -422,7 +422,7 @@ function initDiversosModal() {
     if (e.target === modal) closeModal('diversosModal');
   });
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const editId = document.getElementById('divEditId').value;
 
@@ -438,25 +438,25 @@ function initDiversosModal() {
     };
 
     if (editId) {
-      updateProduct('diversos', editId, productData);
+      await updateProduct('diversos', editId, productData);
       showToast('Item diverso atualizado com sucesso!');
     } else {
-      addProduct('diversos', productData);
+      await addProduct('diversos', productData);
       showToast('Item diverso adicionado com sucesso!');
     }
 
     closeModal('diversosModal');
-    refreshTables();
+    await refreshTables();
   });
 }
 
-function openDiversosModal(productId = null) {
+async function openDiversosModal(productId = null) {
   const modal = document.getElementById('diversosModal');
   const title = document.getElementById('diversosModalTitle');
   const form = document.getElementById('diversosForm');
 
   if (productId) {
-    const product = getProductById('diversos', productId);
+    const product = await getProductById('diversos', productId);
     if (!product) return;
     title.textContent = 'Editar Item Diverso';
     document.getElementById('divEditId').value = product.id;
@@ -489,31 +489,31 @@ function initCategoryModal() {
     if (e.target === modal) closeModal('categoryModal');
   });
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const editId = document.getElementById('catEditId').value;
     const type = document.getElementById('catEditType').value;
     const name = document.getElementById('catName').value.trim();
 
     if (editId) {
-      updateCategory(type, editId, { name });
+      await updateCategory(type, editId, { name });
       showToast('Categoria atualizada com sucesso!');
     } else {
-      addCategory(type, { name });
+      await addCategory(type, { name });
       showToast('Categoria adicionada com sucesso!');
     }
 
     closeModal('categoryModal');
-    refreshTables();
+    await refreshTables();
   });
 }
 
-function openCategoryModal(type, catId = null) {
+async function openCategoryModal(type, catId = null) {
   const title = document.getElementById('categoryModalTitle');
   document.getElementById('catEditType').value = type;
 
   if (catId) {
-    const categories = getCategories(type);
+    const categories = await getCategories(type);
     const cat = categories.find(c => c.id === catId);
     if (!cat) return;
     title.textContent = 'Editar Categoria';
@@ -538,18 +538,18 @@ function initDeleteModal() {
     closeModal('deleteModal');
     pendingDelete = null;
   });
-  document.getElementById('deleteConfirmBtn').addEventListener('click', () => {
+  document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
     if (pendingDelete) {
       if (pendingDelete.kind === 'product') {
-        deleteProduct(pendingDelete.type, pendingDelete.id);
+        await deleteProduct(pendingDelete.type, pendingDelete.id);
         showToast('Produto excluido com sucesso!');
       } else {
-        deleteCategory(pendingDelete.type, pendingDelete.id);
+        await deleteCategory(pendingDelete.type, pendingDelete.id);
         showToast('Categoria excluida com sucesso!');
       }
       pendingDelete = null;
       closeModal('deleteModal');
-      refreshTables();
+      await refreshTables();
     }
   });
 
@@ -579,11 +579,11 @@ function closeModal(id) {
 }
 
 // ---- Refresh ----
-function refreshTables() {
-  renderGelatoTable(document.getElementById('gelatoSearch').value);
-  renderChocolateTable(document.getElementById('chocolateSearch').value);
-  renderDiversosTable(document.getElementById('diversosSearch').value);
-  renderCategoryTables();
+async function refreshTables() {
+  await renderGelatoTable(document.getElementById('gelatoSearch').value);
+  await renderChocolateTable(document.getElementById('chocolateSearch').value);
+  await renderDiversosTable(document.getElementById('diversosSearch').value);
+  await renderCategoryTables();
 }
 
 // ---- Toast ----

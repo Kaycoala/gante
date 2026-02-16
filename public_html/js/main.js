@@ -2,14 +2,14 @@
 // GANTE — Main Public Site Logic
 // ============================================
 
-document.addEventListener('DOMContentLoaded', () => {
-  initData();
+document.addEventListener('DOMContentLoaded', async () => {
+  await initData();
   initNavbar();
   initMobileMenu();
   initScrollAnimations();
-  renderGelatoSection();
-  renderChocolateSection();
-  initOrderBuilder();
+  await renderGelatoSection();
+  await renderChocolateSection();
+  await initOrderBuilder();
   initContactForm();
 });
 
@@ -83,10 +83,10 @@ function initScrollAnimations() {
 }
 
 // ---- Render Gelato Section ----
-function renderGelatoSection() {
+async function renderGelatoSection() {
   const filterBar = document.getElementById('gelatoFilters');
   const grid = document.getElementById('gelatoGrid');
-  const categories = getCategories('gelato');
+  const categories = await getCategories('gelato');
 
   // Render filter buttons
   filterBar.innerHTML = `
@@ -96,20 +96,20 @@ function renderGelatoSection() {
 
   // Bind filter clicks
   filterBar.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      renderGelatoCards(btn.dataset.filter);
+      await renderGelatoCards(btn.dataset.filter);
     });
   });
 
-  renderGelatoCards('todos');
+  await renderGelatoCards('todos');
 }
 
-function renderGelatoCards(filter) {
+async function renderGelatoCards(filter) {
   const grid = document.getElementById('gelatoGrid');
-  const products = getProductsByCategory('gelato', filter);
-  const categories = getCategories('gelato');
+  const products = await getProductsByCategory('gelato', filter);
+  const categories = await getCategories('gelato');
 
   grid.innerHTML = products.map(p => {
     const cat = categories.find(c => c.id === p.category);
@@ -118,10 +118,10 @@ function renderGelatoCards(filter) {
 }
 
 // ---- Render Chocolate Section ----
-function renderChocolateSection() {
+async function renderChocolateSection() {
   const filterBar = document.getElementById('chocolateFilters');
   const grid = document.getElementById('chocolateGrid');
-  const categories = getCategories('chocolate');
+  const categories = await getCategories('chocolate');
 
   filterBar.innerHTML = `
     <button class="filter-btn active" data-filter="todos">Todos</button>
@@ -129,20 +129,20 @@ function renderChocolateSection() {
   `;
 
   filterBar.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      renderChocolateCards(btn.dataset.filter);
+      await renderChocolateCards(btn.dataset.filter);
     });
   });
 
-  renderChocolateCards('todos');
+  await renderChocolateCards('todos');
 }
 
-function renderChocolateCards(filter) {
+async function renderChocolateCards(filter) {
   const grid = document.getElementById('chocolateGrid');
-  const products = getProductsByCategory('chocolate', filter);
-  const categories = getCategories('chocolate');
+  const products = await getProductsByCategory('chocolate', filter);
+  const categories = await getCategories('chocolate');
 
   grid.innerHTML = products.map(p => {
     const cat = categories.find(c => c.id === p.category);
@@ -210,15 +210,15 @@ let orderState = {
   selectedDiversos: {}, // { diversoId: quantity }
 };
 
-function initOrderBuilder() {
+async function initOrderBuilder() {
   initOrderTabs();
-  renderGelatoSizes();
-  renderGelatoFlavors();
-  renderToppings();
-  renderChocolateChoices();
-  renderDiversosChoices();
+  await renderGelatoSizes();
+  await renderGelatoFlavors();
+  await renderToppings();
+  await renderChocolateChoices();
+  await renderDiversosChoices();
   initQtyControls();
-  initAddButtons();
+  initAddButtonsMain();
   initFinalizeButtons();
 }
 
@@ -244,9 +244,14 @@ function initOrderTabs() {
 }
 
 // Gelato Sizes
-function renderGelatoSizes() {
+// Cache local dos tamanhos para uso no order builder
+let _gelatoSizesCache = [];
+
+async function renderGelatoSizes() {
   const container = document.getElementById('gelatoSizes');
-  container.innerHTML = GELATO_SIZES.map((s, i) => `
+  _gelatoSizesCache = await getGelatoSizes();
+
+  container.innerHTML = _gelatoSizesCache.map((s, i) => `
     <div class="size-option ${i === 0 ? 'selected' : ''}" data-size="${s.id}">
       <strong>${s.name}</strong>
       <small>${s.balls} sabor${s.balls > 1 ? 'es' : ''}</small>
@@ -254,13 +259,13 @@ function renderGelatoSizes() {
     </div>
   `).join('');
 
-  orderState.gelatoSize = GELATO_SIZES[0];
+  orderState.gelatoSize = _gelatoSizesCache[0] || null;
 
   container.querySelectorAll('.size-option').forEach(opt => {
     opt.addEventListener('click', () => {
       container.querySelectorAll('.size-option').forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
-      orderState.gelatoSize = GELATO_SIZES.find(s => s.id === opt.dataset.size);
+      orderState.gelatoSize = _gelatoSizesCache.find(s => String(s.id) === opt.dataset.size);
       orderState.selectedFlavors = [];
       updateFlavorSelection();
     });
@@ -268,9 +273,9 @@ function renderGelatoSizes() {
 }
 
 // Gelato Flavors (selecao simples - apenas toggle)
-function renderGelatoFlavors() {
+async function renderGelatoFlavors() {
   const container = document.getElementById('gelatoFlavors');
-  const gelatos = getProducts('gelato');
+  const gelatos = await getProducts('gelato');
 
   container.innerHTML = gelatos.map(g => {
     const hasImg = g.imageUrl && g.imageUrl.length > 0;
@@ -334,9 +339,14 @@ function updateFlavorSelection() {
 }
 
 // Toppings
-function renderToppings() {
+// Cache local dos toppings para uso no order builder
+let _toppingsCache = [];
+
+async function renderToppings() {
   const container = document.getElementById('toppingsGrid');
-  container.innerHTML = TOPPINGS.map(t => `
+  _toppingsCache = await getToppings();
+
+  container.innerHTML = _toppingsCache.map(t => `
     <div class="topping-item" data-id="${t.id}">
       ${t.name} (+${formatPrice(t.price)})
     </div>
@@ -356,9 +366,9 @@ function renderToppings() {
 }
 
 // Chocolate Choices (com quantidade por chocolate - sem limite)
-function renderChocolateChoices() {
+async function renderChocolateChoices() {
   const container = document.getElementById('chocolateChoices');
-  const chocos = getProducts('chocolate');
+  const chocos = await getProducts('chocolate');
 
   container.innerHTML = chocos.map(c => {
     const hasImg = c.imageUrl && c.imageUrl.length > 0;
@@ -425,9 +435,9 @@ function updateChocoSelection() {
 }
 
 // Diversos Choices (sem limite minimo/maximo)
-function renderDiversosChoices() {
+async function renderDiversosChoices() {
   const container = document.getElementById('diversosChoices');
-  const diversos = getProducts('diversos');
+  const diversos = await getProducts('diversos');
 
   container.innerHTML = diversos.map(d => {
     const hue = hashStringToHue(d.name);
@@ -489,14 +499,14 @@ function initQtyControls() {
   orderState.gelatoQty = 1;
 }
 
-// Add Buttons
-function initAddButtons() {
+// Add Buttons (Order Builder)
+function initAddButtonsMain() {
   document.getElementById('addGelatoBtn').addEventListener('click', addGelatoToOrder);
   document.getElementById('addChocolateBtn').addEventListener('click', addChocolateToOrder);
   document.getElementById('addDiversosBtn').addEventListener('click', addDiversosToOrder);
 }
 
-function addGelatoToOrder() {
+async function addGelatoToOrder() {
   if (!orderState.gelatoSize) {
     showToast('Selecione um tamanho.', 'error');
     return;
@@ -511,19 +521,19 @@ function addGelatoToOrder() {
     return;
   }
 
-  const gelatos = getProducts('gelato');
+  const gelatos = await getProducts('gelato');
   const flavorDescParts = orderState.selectedFlavors.map(id => {
-    const g = gelatos.find(p => p.id === id);
+    const g = gelatos.find(p => String(p.id) === String(id));
     return g ? g.name : id;
   });
 
   const toppingNames = orderState.selectedToppings.map(id => {
-    const t = TOPPINGS.find(tp => tp.id === id);
+    const t = _toppingsCache.find(tp => String(tp.id) === String(id));
     return t ? t.name : id;
   });
 
   const toppingCost = orderState.selectedToppings.reduce((sum, id) => {
-    const t = TOPPINGS.find(tp => tp.id === id);
+    const t = _toppingsCache.find(tp => String(tp.id) === String(id));
     return sum + (t ? t.price : 0);
   }, 0);
 
@@ -551,14 +561,14 @@ function addGelatoToOrder() {
   showToast('Gelato adicionado ao pedido!', 'success');
 }
 
-function addChocolateToOrder() {
+async function addChocolateToOrder() {
   const totalSelected = getChocoTotalCount();
   if (totalSelected === 0) {
     showToast('Selecione pelo menos um chocolate.', 'error');
     return;
   }
 
-  const chocolates = getProducts('chocolate');
+  const chocolates = await getProducts('chocolate');
   const chocoDescParts = [];
   let itemPrice = 0;
 
@@ -587,8 +597,8 @@ function addChocolateToOrder() {
   showToast('Chocolates adicionados ao pedido!', 'success');
 }
 
-function addDiversosToOrder() {
-  const diversos = getProducts('diversos');
+async function addDiversosToOrder() {
+  const diversos = await getProducts('diversos');
   const totalSelected = Object.values(orderState.selectedDiversos).reduce((sum, qty) => sum + qty, 0);
   
   if (totalSelected === 0) {
