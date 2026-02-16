@@ -1,461 +1,340 @@
 // ============================================
-// GANTE — CRUD Layer (Supabase + Fallback Local)
+// GANTE — CRUD Helpers (localStorage + Firebase)
 // ============================================
-// Se o Supabase estiver configurado, usa o banco de dados.
-// Caso contrario, usa os dados locais do data.js com localStorage.
+//
+// Este arquivo usa localStorage por padrao.
+// Para usar Firebase, descomente os blocos marcados com
+// "FIREBASE:" e comente os blocos marcados com "LOCALSTORAGE:".
+// Certifique-se de ter configurado o firebase-config.js antes.
+//
+// COMO FUNCIONA O SISTEMA DE DADOS:
+// 1. Os produtos "oficiais" ficam no data.js (SEED_GELATOS, SEED_CHOCOLATES, SEED_DIVERSOS)
+// 2. No primeiro acesso, os dados do data.js sao copiados para o localStorage
+// 3. O admin pode criar/editar/excluir produtos via painel (salva no localStorage)
+// 4. Quando voce altera o data.js, incremente DATA_VERSION abaixo
+// 5. No proximo carregamento, o sistema faz MERGE inteligente:
+//    - Produtos do seed sao atualizados (preco, nome, descricao, etc)
+//    - Imagens adicionadas pelo admin sao preservadas
+//    - Produtos criados pelo admin (nao existentes no seed) sao mantidos
+//    - Produtos removidos do seed sao removidos do localStorage
 
-// ---- Local data store (fallback) ----
-// Inicializa com dados do data.js e persiste mudancas no localStorage
-const LOCAL_STORE_KEY = 'gante_local_store_v2';
+const STORAGE_KEYS = {
+  GELATOS: 'gante_gelatos',
+  CHOCOLATES: 'gante_chocolates',
+  DIVERSOS: 'gante_diversos',
+  GELATO_CATEGORIES: 'gante_gelato_categories',
+  CHOCOLATE_CATEGORIES: 'gante_chocolate_categories',
+  INITIALIZED: 'gante_initialized',
+};
 
-function getLocalStore() {
-  const saved = localStorage.getItem(LOCAL_STORE_KEY);
-  if (saved) {
-    try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+// ---- Initialization ----
+// INCREMENTE este numero sempre que alterar produtos no data.js
+// Isso forca o re-sync dos dados no proximo carregamento
+const DATA_VERSION = '5';
+
+// Funcao auxiliar para fazer merge inteligente de produtos
+// - Atualiza dados do seed (preco, nome, descricao, categoria)
+// - Preserva imageUrl se o admin ja adicionou uma imagem
+// - Preserva produtos customizados criados pelo admin
+// - Remove produtos que foram deletados do seed
+function mergeProducts(seedProducts, existingProducts) {
+  const merged = [];
+
+  // 1. Para cada produto no seed, fazer update ou insert
+  seedProducts.forEach(seed => {
+    const existing = existingProducts.find(e => e.id === seed.id);
+    if (existing) {
+      // UPDATE: manter imagem do admin, mas atualizar o resto do seed
+      merged.push({
+        ...seed,
+        imageUrl: existing.imageUrl || seed.imageUrl
+      });
+    } else {
+      // INSERT: produto novo no seed
+      merged.push({ ...seed });
+    }
+  });
+
+  // 2. Manter produtos customizados criados pelo admin (nao existem no seed)
+  existingProducts.forEach(existing => {
+    const isInSeed = seedProducts.find(s => s.id === existing.id);
+    if (!isInSeed) {
+      merged.push(existing);
+    }
+  });
+
+  return merged;
+}
+
+function initData() {
+  const currentVersion = localStorage.getItem('gante_data_version');
+  if (currentVersion === DATA_VERSION && localStorage.getItem(STORAGE_KEYS.INITIALIZED)) return;
+
+  // Re-seed com nova estrutura (preserva imagens e produtos customizados)
+  if (currentVersion && currentVersion !== DATA_VERSION) {
+    const existingGelatos = JSON.parse(localStorage.getItem(STORAGE_KEYS.GELATOS) || '[]');
+    const existingChocolates = JSON.parse(localStorage.getItem(STORAGE_KEYS.CHOCOLATES) || '[]');
+    const existingDiversos = JSON.parse(localStorage.getItem(STORAGE_KEYS.DIVERSOS) || '[]');
+
+    localStorage.setItem(STORAGE_KEYS.GELATOS, JSON.stringify(mergeProducts(SEED_GELATOS, existingGelatos)));
+    localStorage.setItem(STORAGE_KEYS.CHOCOLATES, JSON.stringify(mergeProducts(SEED_CHOCOLATES, existingChocolates)));
+    localStorage.setItem(STORAGE_KEYS.DIVERSOS, JSON.stringify(mergeProducts(SEED_DIVERSOS, existingDiversos)));
+  } else {
+    // Primeiro acesso: carregar tudo do seed
+    localStorage.setItem(STORAGE_KEYS.GELATOS, JSON.stringify(SEED_GELATOS));
+    localStorage.setItem(STORAGE_KEYS.CHOCOLATES, JSON.stringify(SEED_CHOCOLATES));
+    localStorage.setItem(STORAGE_KEYS.DIVERSOS, JSON.stringify(SEED_DIVERSOS));
   }
-  // Inicializa a partir do data.js
-  const store = {
-    products: [
-      ...SEED_GELATOS.map(p => ({ ...p })),
-      ...SEED_CHOCOLATES.map(p => ({ ...p })),
-      ...SEED_DIVERSOS.map(p => ({ ...p })),
-    ],
-    categories: [
-      ...GELATO_CATEGORIES.map(c => ({ ...c, type: 'gelato' })),
-      ...CHOCOLATE_CATEGORIES.map(c => ({ ...c, type: 'chocolate' })),
-    ],
-    gelato_sizes: GELATO_SIZES.map((s, i) => ({ ...s, sort_order: i })),
-    toppings: TOPPINGS.map(t => ({ ...t })),
-    chocolate_boxes: CHOCOLATE_BOXES.map(b => ({ ...b })),
-  };
-  localStorage.setItem(LOCAL_STORE_KEY, JSON.stringify(store));
-  return store;
-}
 
-function saveLocalStore(store) {
-  localStorage.setItem(LOCAL_STORE_KEY, JSON.stringify(store));
-}
-
-// ---- Helper: check if using Supabase ----
-function useSupabase() {
-  return typeof SUPABASE_CONFIGURED !== 'undefined' && SUPABASE_CONFIGURED && supabase !== null;
+  // Categorias sempre sao atualizadas pelo seed (fonte da verdade)
+  localStorage.setItem(STORAGE_KEYS.GELATO_CATEGORIES, JSON.stringify(GELATO_CATEGORIES));
+  localStorage.setItem(STORAGE_KEYS.CHOCOLATE_CATEGORIES, JSON.stringify(CHOCOLATE_CATEGORIES));
+  localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
+  localStorage.setItem('gante_data_version', DATA_VERSION);
 }
 
 // ============================================
-// PRODUCTS
+// FIREBASE: Funcoes para inicializar dados no Firestore
 // ============================================
+// Descomente o bloco abaixo para popular o Firestore
+// com os dados iniciais (execute apenas uma vez).
+//
+// async function initDataFirebase() {
+//   // Verifica se ja foi inicializado
+//   const meta = await db.collection('meta').doc('init').get();
+//   if (meta.exists) return;
+//
+//   const batch = db.batch();
+//
+//   // Gelatos
+//   SEED_GELATOS.forEach(g => {
+//     batch.set(gelatosCollection.doc(g.id), g);
+//   });
+//
+//   // Chocolates
+//   SEED_CHOCOLATES.forEach(c => {
+//     batch.set(chocolatesCollection.doc(c.id), c);
+//   });
+//
+//   // Categorias de Gelato
+//   GELATO_CATEGORIES.forEach(cat => {
+//     batch.set(gelatoCategoriesCollection.doc(cat.id), cat);
+//   });
+//
+//   // Categorias de Chocolate
+//   CHOCOLATE_CATEGORIES.forEach(cat => {
+//     batch.set(chocolateCategoriesCollection.doc(cat.id), cat);
+//   });
+//
+//   // Marcar como inicializado
+//   batch.set(db.collection('meta').doc('init'), { done: true });
+//
+//   await batch.commit();
+//   console.log('Dados iniciais salvos no Firestore!');
+// }
 
-async function getProducts(type) {
-  if (useSupabase()) {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('type', type)
-      .order('created_at', { ascending: true });
-    if (error) { console.error('getProducts error:', error); return []; }
-    return (data || []).map(mapProductFromDb);
-  }
-  // Fallback local
-  const store = getLocalStore();
-  return store.products.filter(p => p.type === type);
+// ---- Products (LOCALSTORAGE) ----
+function getProducts(type) {
+  let key;
+  if (type === 'gelato') key = STORAGE_KEYS.GELATOS;
+  else if (type === 'chocolate') key = STORAGE_KEYS.CHOCOLATES;
+  else if (type === 'diversos') key = STORAGE_KEYS.DIVERSOS;
+  else key = STORAGE_KEYS.GELATOS;
+  const data = localStorage.getItem(key);
+  return data ? JSON.parse(data) : [];
 }
 
-async function getProductsByCategory(type, categoryId) {
-  if (!categoryId || categoryId === 'todos') return getProducts(type);
-  if (useSupabase()) {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('type', type)
-      .eq('category', categoryId)
-      .order('created_at', { ascending: true });
-    if (error) { console.error('getProductsByCategory error:', error); return []; }
-    return (data || []).map(mapProductFromDb);
-  }
-  const store = getLocalStore();
-  return store.products.filter(p => p.type === type && p.category === categoryId);
+function getProductsByCategory(type, categoryId) {
+  const products = getProducts(type);
+  if (!categoryId || categoryId === 'todos') return products;
+  return products.filter(p => p.category === categoryId);
 }
 
-async function getProductById(type, id) {
-  if (useSupabase()) {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single();
-    if (error) { console.error('getProductById error:', error); return null; }
-    return data ? mapProductFromDb(data) : null;
-  }
-  const store = getLocalStore();
-  return store.products.find(p => p.id === id) || null;
+function getProductById(type, id) {
+  const products = getProducts(type);
+  return products.find(p => p.id === id) || null;
 }
 
-async function addProduct(type, product) {
-  const id = type.charAt(0) + Date.now();
-  if (useSupabase()) {
-    const row = {
-      id,
-      name: product.name,
-      description: product.description || '',
-      price: product.price,
-      category: product.category || null,
-      type: type,
-      image_url: product.imageUrl || '',
-    };
-    const { data, error } = await supabase
-      .from('products')
-      .insert(row)
-      .select()
-      .single();
-    if (error) { console.error('addProduct error:', error); return null; }
-    return mapProductFromDb(data);
-  }
-  // Fallback local
-  const store = getLocalStore();
-  const newProduct = {
-    id,
-    name: product.name,
-    description: product.description || '',
-    price: product.price,
-    category: product.category || null,
-    type: type,
-    imageUrl: product.imageUrl || '',
-  };
-  store.products.push(newProduct);
-  saveLocalStore(store);
-  return newProduct;
+function addProduct(type, product) {
+  const products = getProducts(type);
+  product.id = type.charAt(0) + Date.now();
+  products.push(product);
+  saveProducts(type, products);
+  return product;
 }
 
-async function updateProduct(type, id, updates) {
-  if (useSupabase()) {
-    const row = {};
-    if (updates.name !== undefined) row.name = updates.name;
-    if (updates.description !== undefined) row.description = updates.description;
-    if (updates.price !== undefined) row.price = updates.price;
-    if (updates.category !== undefined) row.category = updates.category;
-    if (updates.type !== undefined) row.type = updates.type;
-    if (updates.imageUrl !== undefined) row.image_url = updates.imageUrl;
-    const { data, error } = await supabase
-      .from('products')
-      .update(row)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) { console.error('updateProduct error:', error); return null; }
-    return mapProductFromDb(data);
-  }
-  const store = getLocalStore();
-  const idx = store.products.findIndex(p => p.id === id);
+function updateProduct(type, id, updates) {
+  const products = getProducts(type);
+  const idx = products.findIndex(p => p.id === id);
   if (idx === -1) return null;
-  Object.assign(store.products[idx], updates);
-  saveLocalStore(store);
-  return store.products[idx];
+  products[idx] = { ...products[idx], ...updates, id };
+  saveProducts(type, products);
+  return products[idx];
 }
 
-async function deleteProduct(type, id) {
-  if (useSupabase()) {
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', id);
-    if (error) console.error('deleteProduct error:', error);
-    return;
-  }
-  const store = getLocalStore();
-  store.products = store.products.filter(p => p.id !== id);
-  saveLocalStore(store);
+function deleteProduct(type, id) {
+  let products = getProducts(type);
+  products = products.filter(p => p.id !== id);
+  saveProducts(type, products);
 }
 
-function mapProductFromDb(row) {
-  return {
-    id: row.id,
-    name: row.name,
-    description: row.description,
-    price: Number(row.price),
-    category: row.category,
-    type: row.type,
-    imageUrl: row.image_url || '',
-  };
+function saveProducts(type, products) {
+  let key;
+  if (type === 'gelato') key = STORAGE_KEYS.GELATOS;
+  else if (type === 'chocolate') key = STORAGE_KEYS.CHOCOLATES;
+  else if (type === 'diversos') key = STORAGE_KEYS.DIVERSOS;
+  else key = STORAGE_KEYS.GELATOS;
+  localStorage.setItem(key, JSON.stringify(products));
 }
 
 // ============================================
-// CATEGORIES
+// FIREBASE: Funcoes de Produtos para Firestore
 // ============================================
-
-async function getCategories(type) {
-  if (useSupabase()) {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('type', type)
-      .order('created_at', { ascending: true });
-    if (error) { console.error('getCategories error:', error); return []; }
-    return data || [];
-  }
-  const store = getLocalStore();
-  return store.categories.filter(c => c.type === type);
-}
-
-async function addCategory(type, category) {
-  const id = category.name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15) + Date.now();
-  if (useSupabase()) {
-    const row = { id, name: category.name, type };
-    const { data, error } = await supabase
-      .from('categories')
-      .insert(row)
-      .select()
-      .single();
-    if (error) { console.error('addCategory error:', error); return null; }
-    return data;
-  }
-  const store = getLocalStore();
-  const newCat = { id, name: category.name, type };
-  store.categories.push(newCat);
-  saveLocalStore(store);
-  return newCat;
-}
-
-async function updateCategory(type, id, updates) {
-  if (useSupabase()) {
-    const { data, error } = await supabase
-      .from('categories')
-      .update({ name: updates.name })
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) { console.error('updateCategory error:', error); return null; }
-    return data;
-  }
-  const store = getLocalStore();
-  const cat = store.categories.find(c => c.id === id);
-  if (!cat) return null;
-  cat.name = updates.name;
-  saveLocalStore(store);
-  return cat;
-}
-
-async function deleteCategory(type, id) {
-  if (useSupabase()) {
-    const { error } = await supabase
-      .from('categories')
-      .delete()
-      .eq('id', id);
-    if (error) console.error('deleteCategory error:', error);
-    return;
-  }
-  const store = getLocalStore();
-  store.categories = store.categories.filter(c => c.id !== id);
-  saveLocalStore(store);
-}
+// Descomente e substitua as funcoes acima para usar Firestore.
+//
+// async function getProducts(type) {
+//   const collection = type === 'gelato' ? gelatosCollection : chocolatesCollection;
+//   const snapshot = await collection.get();
+//   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+// }
+//
+// async function getProductsByCategory(type, categoryId) {
+//   const collection = type === 'gelato' ? gelatosCollection : chocolatesCollection;
+//   if (!categoryId || categoryId === 'todos') {
+//     const snapshot = await collection.get();
+//     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+//   }
+//   const snapshot = await collection.where('category', '==', categoryId).get();
+//   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+// }
+//
+// async function getProductById(type, id) {
+//   const collection = type === 'gelato' ? gelatosCollection : chocolatesCollection;
+//   const doc = await collection.doc(id).get();
+//   return doc.exists ? { id: doc.id, ...doc.data() } : null;
+// }
+//
+// async function addProduct(type, product) {
+//   const collection = type === 'gelato' ? gelatosCollection : chocolatesCollection;
+//   const docRef = await collection.add(product);
+//   return { id: docRef.id, ...product };
+// }
+//
+// async function updateProduct(type, id, updates) {
+//   const collection = type === 'gelato' ? gelatosCollection : chocolatesCollection;
+//   await collection.doc(id).update(updates);
+//   return { id, ...updates };
+// }
+//
+// async function deleteProduct(type, id) {
+//   const collection = type === 'gelato' ? gelatosCollection : chocolatesCollection;
+//   // Tambem deletar a imagem do Storage se existir
+//   const doc = await collection.doc(id).get();
+//   if (doc.exists && doc.data().imageUrl) {
+//     try {
+//       const imageRef = storage.refFromURL(doc.data().imageUrl);
+//       await imageRef.delete();
+//     } catch (e) {
+//       console.warn('Imagem nao encontrada no Storage:', e);
+//     }
+//   }
+//   await collection.doc(id).delete();
+// }
 
 // ============================================
-// GELATO SIZES
+// FIREBASE: Upload de Imagem para Storage
 // ============================================
+// Funcao para fazer upload de imagem de produto
+//
+// async function uploadProductImage(file, type, productId) {
+//   const path = `produtos/${type}/${productId}_${Date.now()}.${file.name.split('.').pop()}`;
+//   const ref = storage.ref().child(path);
+//   const snapshot = await ref.put(file);
+//   const url = await snapshot.ref.getDownloadURL();
+//   return url;
+// }
+//
+// async function deleteProductImage(imageUrl) {
+//   if (!imageUrl) return;
+//   try {
+//     const imageRef = storage.refFromURL(imageUrl);
+//     await imageRef.delete();
+//   } catch (e) {
+//     console.warn('Erro ao deletar imagem:', e);
+//   }
+// }
 
-async function getGelatoSizes() {
-  if (useSupabase()) {
-    const { data, error } = await supabase
-      .from('gelato_sizes')
-      .select('*')
-      .order('sort_order', { ascending: true });
-    if (error) { console.error('getGelatoSizes error:', error); return []; }
-    return (data || []).map(mapGelatoSizeFromDb);
-  }
-  const store = getLocalStore();
-  return store.gelato_sizes.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+// ---- Categories (LOCALSTORAGE) ----
+function getCategories(type) {
+  const key = type === 'gelato' ? STORAGE_KEYS.GELATO_CATEGORIES : STORAGE_KEYS.CHOCOLATE_CATEGORIES;
+  const data = localStorage.getItem(key);
+  return data ? JSON.parse(data) : [];
 }
 
-async function addGelatoSize(size) {
-  const id = 'sz' + Date.now();
-  if (useSupabase()) {
-    const row = { id, name: size.name, balls: size.balls, price: size.price, sort_order: size.sort_order || 0 };
-    const { data, error } = await supabase
-      .from('gelato_sizes')
-      .insert(row)
-      .select()
-      .single();
-    if (error) { console.error('addGelatoSize error:', error); return null; }
-    return mapGelatoSizeFromDb(data);
-  }
-  const store = getLocalStore();
-  const newSize = { id, name: size.name, balls: size.balls, price: size.price, sort_order: size.sort_order || 0 };
-  store.gelato_sizes.push(newSize);
-  saveLocalStore(store);
-  return newSize;
+function addCategory(type, category) {
+  const categories = getCategories(type);
+  category.id = category.name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15) + Date.now();
+  categories.push(category);
+  saveCategories(type, categories);
+  return category;
 }
 
-async function updateGelatoSize(id, updates) {
-  if (useSupabase()) {
-    const row = {};
-    if (updates.name !== undefined) row.name = updates.name;
-    if (updates.balls !== undefined) row.balls = updates.balls;
-    if (updates.price !== undefined) row.price = updates.price;
-    if (updates.sort_order !== undefined) row.sort_order = updates.sort_order;
-    const { data, error } = await supabase
-      .from('gelato_sizes')
-      .update(row)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) { console.error('updateGelatoSize error:', error); return null; }
-    return mapGelatoSizeFromDb(data);
-  }
-  const store = getLocalStore();
-  const size = store.gelato_sizes.find(s => s.id === id);
-  if (!size) return null;
-  Object.assign(size, updates);
-  saveLocalStore(store);
-  return size;
+function updateCategory(type, id, updates) {
+  const categories = getCategories(type);
+  const idx = categories.findIndex(c => c.id === id);
+  if (idx === -1) return null;
+  categories[idx] = { ...categories[idx], ...updates, id };
+  saveCategories(type, categories);
+  return categories[idx];
 }
 
-async function deleteGelatoSize(id) {
-  if (useSupabase()) {
-    const { error } = await supabase.from('gelato_sizes').delete().eq('id', id);
-    if (error) console.error('deleteGelatoSize error:', error);
-    return;
-  }
-  const store = getLocalStore();
-  store.gelato_sizes = store.gelato_sizes.filter(s => s.id !== id);
-  saveLocalStore(store);
+function deleteCategory(type, id) {
+  let categories = getCategories(type);
+  categories = categories.filter(c => c.id !== id);
+  saveCategories(type, categories);
 }
 
-function mapGelatoSizeFromDb(row) {
-  return { id: row.id, name: row.name, balls: Number(row.balls), price: Number(row.price), sort_order: Number(row.sort_order || 0) };
+function saveCategories(type, categories) {
+  const key = type === 'gelato' ? STORAGE_KEYS.GELATO_CATEGORIES : STORAGE_KEYS.CHOCOLATE_CATEGORIES;
+  localStorage.setItem(key, JSON.stringify(categories));
 }
 
 // ============================================
-// TOPPINGS
+// FIREBASE: Funcoes de Categorias para Firestore
 // ============================================
+//
+// async function getCategories(type) {
+//   const collection = type === 'gelato'
+//     ? gelatoCategoriesCollection
+//     : chocolateCategoriesCollection;
+//   const snapshot = await collection.get();
+//   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+// }
+//
+// async function addCategory(type, category) {
+//   const collection = type === 'gelato'
+//     ? gelatoCategoriesCollection
+//     : chocolateCategoriesCollection;
+//   const docRef = await collection.add(category);
+//   return { id: docRef.id, ...category };
+// }
+//
+// async function updateCategory(type, id, updates) {
+//   const collection = type === 'gelato'
+//     ? gelatoCategoriesCollection
+//     : chocolateCategoriesCollection;
+//   await collection.doc(id).update(updates);
+//   return { id, ...updates };
+// }
+//
+// async function deleteCategory(type, id) {
+//   const collection = type === 'gelato'
+//     ? gelatoCategoriesCollection
+//     : chocolateCategoriesCollection;
+//   await collection.doc(id).delete();
+// }
 
-async function getToppings() {
-  if (useSupabase()) {
-    const { data, error } = await supabase
-      .from('toppings')
-      .select('*')
-      .order('created_at', { ascending: true });
-    if (error) { console.error('getToppings error:', error); return []; }
-    return (data || []).map(mapToppingFromDb);
-  }
-  const store = getLocalStore();
-  return store.toppings;
-}
-
-async function addTopping(topping) {
-  const id = 't' + Date.now();
-  if (useSupabase()) {
-    const row = { id, name: topping.name, price: topping.price };
-    const { data, error } = await supabase.from('toppings').insert(row).select().single();
-    if (error) { console.error('addTopping error:', error); return null; }
-    return mapToppingFromDb(data);
-  }
-  const store = getLocalStore();
-  const newT = { id, name: topping.name, price: topping.price };
-  store.toppings.push(newT);
-  saveLocalStore(store);
-  return newT;
-}
-
-async function updateTopping(id, updates) {
-  if (useSupabase()) {
-    const row = {};
-    if (updates.name !== undefined) row.name = updates.name;
-    if (updates.price !== undefined) row.price = updates.price;
-    const { data, error } = await supabase.from('toppings').update(row).eq('id', id).select().single();
-    if (error) { console.error('updateTopping error:', error); return null; }
-    return mapToppingFromDb(data);
-  }
-  const store = getLocalStore();
-  const t = store.toppings.find(t => t.id === id);
-  if (!t) return null;
-  Object.assign(t, updates);
-  saveLocalStore(store);
-  return t;
-}
-
-async function deleteTopping(id) {
-  if (useSupabase()) {
-    const { error } = await supabase.from('toppings').delete().eq('id', id);
-    if (error) console.error('deleteTopping error:', error);
-    return;
-  }
-  const store = getLocalStore();
-  store.toppings = store.toppings.filter(t => t.id !== id);
-  saveLocalStore(store);
-}
-
-function mapToppingFromDb(row) {
-  return { id: row.id, name: row.name, price: Number(row.price) };
-}
-
-// ============================================
-// CHOCOLATE BOXES
-// ============================================
-
-async function getChocolateBoxes() {
-  if (useSupabase()) {
-    const { data, error } = await supabase
-      .from('chocolate_boxes')
-      .select('*')
-      .order('units', { ascending: true });
-    if (error) { console.error('getChocolateBoxes error:', error); return []; }
-    return (data || []).map(mapChocolateBoxFromDb);
-  }
-  const store = getLocalStore();
-  return store.chocolate_boxes.sort((a, b) => a.units - b.units);
-}
-
-async function addChocolateBox(box) {
-  const id = 'box' + Date.now();
-  if (useSupabase()) {
-    const row = { id, name: box.name, units: box.units, price: box.price };
-    const { data, error } = await supabase.from('chocolate_boxes').insert(row).select().single();
-    if (error) { console.error('addChocolateBox error:', error); return null; }
-    return mapChocolateBoxFromDb(data);
-  }
-  const store = getLocalStore();
-  const newBox = { id, name: box.name, units: box.units, price: box.price };
-  store.chocolate_boxes.push(newBox);
-  saveLocalStore(store);
-  return newBox;
-}
-
-async function updateChocolateBox(id, updates) {
-  if (useSupabase()) {
-    const row = {};
-    if (updates.name !== undefined) row.name = updates.name;
-    if (updates.units !== undefined) row.units = updates.units;
-    if (updates.price !== undefined) row.price = updates.price;
-    const { data, error } = await supabase.from('chocolate_boxes').update(row).eq('id', id).select().single();
-    if (error) { console.error('updateChocolateBox error:', error); return null; }
-    return mapChocolateBoxFromDb(data);
-  }
-  const store = getLocalStore();
-  const b = store.chocolate_boxes.find(b => b.id === id);
-  if (!b) return null;
-  Object.assign(b, updates);
-  saveLocalStore(store);
-  return b;
-}
-
-async function deleteChocolateBox(id) {
-  if (useSupabase()) {
-    const { error } = await supabase.from('chocolate_boxes').delete().eq('id', id);
-    if (error) console.error('deleteChocolateBox error:', error);
-    return;
-  }
-  const store = getLocalStore();
-  store.chocolate_boxes = store.chocolate_boxes.filter(b => b.id !== id);
-  saveLocalStore(store);
-}
-
-function mapChocolateBoxFromDb(row) {
-  return { id: row.id, name: row.name, units: Number(row.units), price: Number(row.price) };
-}
-
-// ============================================
-// UTILITIES
-// ============================================
-
+// ---- Utilities ----
 function formatPrice(value) {
   return 'R$ ' + Number(value).toFixed(2).replace('.', ',');
 }
@@ -464,12 +343,13 @@ function generateId() {
   return Math.random().toString(36).substr(2, 9);
 }
 
-// initData - no-op, dados vem do data.js ou Supabase
-async function initData() {
-  if (useSupabase()) {
-    console.log('Usando dados do Supabase.');
-  } else {
-    console.log('Usando dados locais do data.js com localStorage.');
-  }
-  return;
+// ---- Upload de imagem local (converte para base64 no localStorage) ----
+// Enquanto Firebase nao estiver ativo, imagens sao salvas em base64
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
