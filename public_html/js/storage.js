@@ -1,19 +1,16 @@
 // ============================================
-// GANTE — CRUD Helpers (Supabase)
+// GANTE — CRUD Helpers (PHP/MySQL API)
 // ============================================
 //
-// Este arquivo conecta ao Supabase para ler e gravar
-// produtos e categorias. Todas as funcoes sao async.
+// Este arquivo conecta ao backend PHP para ler e gravar
+// produtos e categorias no MySQL. Todas as funcoes sao async.
 //
-// TABELAS NO SUPABASE:
-//   - products        (id, name, description, price, category, type, image_url, created_at)
-//   - categories      (id, name, type, created_at)
-//   - gelato_sizes    (id, name, balls, price)
-//   - chocolate_boxes (id, name, units, price)
-//   - toppings        (id, name, price)
-//
-// O campo "type" em products pode ser: 'gelato', 'chocolate', 'diversos'
-// O campo "type" em categories pode ser: 'gelato', 'chocolate'
+// ENDPOINTS:
+//   - /api/products.php    (GET, POST, PUT, DELETE)
+//   - /api/categories.php  (GET, POST, PUT, DELETE)
+//   - /api/extras.php      (GET - gelato_sizes, chocolate_boxes, toppings)
+
+const API_BASE = '/api';
 
 // ---- Cache local para evitar chamadas repetidas ----
 let _cache = {
@@ -32,14 +29,22 @@ function invalidateCache(key) {
   }
 }
 
+// ---- Helper para fetch ----
+async function apiFetch(url, options = {}) {
+  const response = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Erro na requisicao');
+  }
+  return data;
+}
+
 // ---- Initialization ----
-// Nao precisa mais de initData() para seed local.
-// Os dados iniciais sao inseridos via SQL (seed.sql).
-// Mantemos a funcao para compatibilidade, mas ela apenas
-// carrega os dados do Supabase em cache.
 async function initData() {
   try {
-    // Pre-carregar dados em cache para evitar delay na UI
     const [gelatos, chocolates, diversos, gelatoCats, chocoCats] = await Promise.all([
       getProducts('gelato'),
       getProducts('chocolate'),
@@ -47,14 +52,11 @@ async function initData() {
       getCategories('gelato'),
       getCategories('chocolate'),
     ]);
-    console.log('[v0] Gelatos carregados:', gelatos.length, gelatos);
-    console.log('[v0] Chocolates carregados:', chocolates.length, chocolates);
-    console.log('[v0] Diversos carregados:', diversos.length, diversos);
-    console.log('[v0] Categorias gelato:', gelatoCats.length, gelatoCats);
-    console.log('[v0] Categorias chocolate:', chocoCats.length, chocoCats);
-    console.log('Dados carregados do Supabase com sucesso!');
+    console.log('Dados carregados do MySQL com sucesso!');
+    console.log('Gelatos:', gelatos.length, '| Chocolates:', chocolates.length, '| Diversos:', diversos.length);
+    console.log('Categorias gelato:', gelatoCats.length, '| Categorias chocolate:', chocoCats.length);
   } catch (err) {
-    console.error('Erro ao carregar dados do Supabase:', err);
+    console.error('Erro ao carregar dados do MySQL:', err);
   }
 }
 
@@ -64,15 +66,7 @@ async function initData() {
 
 async function getProducts(type) {
   try {
-    const { data, error } = await supabaseClient
-      .from('products')
-      .select('*')
-      .eq('type', type)
-      .order('created_at', { ascending: true });
-
-    if (error) throw error;
-
-    // Mapear snake_case para camelCase para compatibilidade com o frontend
+    const data = await apiFetch(`${API_BASE}/products.php?type=${encodeURIComponent(type)}`);
     return (data || []).map(mapProductFromDB);
   } catch (err) {
     console.error('Erro ao buscar produtos:', err);
@@ -82,19 +76,11 @@ async function getProducts(type) {
 
 async function getProductsByCategory(type, categoryId) {
   try {
-    let query = supabaseClient
-      .from('products')
-      .select('*')
-      .eq('type', type)
-      .order('created_at', { ascending: true });
-
+    let url = `${API_BASE}/products.php?type=${encodeURIComponent(type)}`;
     if (categoryId && categoryId !== 'todos') {
-      query = query.eq('category', categoryId);
+      url += `&category=${encodeURIComponent(categoryId)}`;
     }
-
-    const { data, error } = await query;
-    if (error) throw error;
-
+    const data = await apiFetch(url);
     return (data || []).map(mapProductFromDB);
   } catch (err) {
     console.error('Erro ao buscar produtos por categoria:', err);
@@ -104,13 +90,7 @@ async function getProductsByCategory(type, categoryId) {
 
 async function getProductById(type, id) {
   try {
-    const { data, error } = await supabaseClient
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) throw error;
+    const data = await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`);
     return data ? mapProductFromDB(data) : null;
   } catch (err) {
     console.error('Erro ao buscar produto:', err);
@@ -120,7 +100,7 @@ async function getProductById(type, id) {
 
 async function addProduct(type, product) {
   try {
-    const dbProduct = {
+    const body = {
       name: product.name,
       description: product.description,
       price: product.price,
@@ -129,13 +109,11 @@ async function addProduct(type, product) {
       image_url: product.imageUrl || '',
     };
 
-    const { data, error } = await supabaseClient
-      .from('products')
-      .insert(dbProduct)
-      .select()
-      .single();
+    const data = await apiFetch(`${API_BASE}/products.php`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
 
-    if (error) throw error;
     invalidateCache('products');
     return mapProductFromDB(data);
   } catch (err) {
@@ -146,22 +124,19 @@ async function addProduct(type, product) {
 
 async function updateProduct(type, id, updates) {
   try {
-    const dbUpdates = {};
-    if (updates.name !== undefined) dbUpdates.name = updates.name;
-    if (updates.description !== undefined) dbUpdates.description = updates.description;
-    if (updates.price !== undefined) dbUpdates.price = updates.price;
-    if (updates.category !== undefined) dbUpdates.category = updates.category;
-    if (updates.type !== undefined) dbUpdates.type = updates.type;
-    if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl;
+    const body = { id: id };
+    if (updates.name !== undefined) body.name = updates.name;
+    if (updates.description !== undefined) body.description = updates.description;
+    if (updates.price !== undefined) body.price = updates.price;
+    if (updates.category !== undefined) body.category = updates.category;
+    if (updates.type !== undefined) body.type = updates.type;
+    if (updates.imageUrl !== undefined) body.image_url = updates.imageUrl;
 
-    const { data, error } = await supabaseClient
-      .from('products')
-      .update(dbUpdates)
-      .eq('id', id)
-      .select()
-      .single();
+    const data = await apiFetch(`${API_BASE}/products.php`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    });
 
-    if (error) throw error;
     invalidateCache('products');
     return mapProductFromDB(data);
   } catch (err) {
@@ -172,12 +147,9 @@ async function updateProduct(type, id, updates) {
 
 async function deleteProduct(type, id) {
   try {
-    const { error } = await supabaseClient
-      .from('products')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
     invalidateCache('products');
   } catch (err) {
     console.error('Erro ao deletar produto:', err);
@@ -190,13 +162,7 @@ async function deleteProduct(type, id) {
 
 async function getCategories(type) {
   try {
-    const { data, error } = await supabaseClient
-      .from('categories')
-      .select('*')
-      .eq('type', type)
-      .order('created_at', { ascending: true });
-
-    if (error) throw error;
+    const data = await apiFetch(`${API_BASE}/categories.php?type=${encodeURIComponent(type)}`);
     return (data || []).map(mapCategoryFromDB);
   } catch (err) {
     console.error('Erro ao buscar categorias:', err);
@@ -206,18 +172,16 @@ async function getCategories(type) {
 
 async function addCategory(type, category) {
   try {
-    const dbCategory = {
+    const body = {
       name: category.name,
       type: type,
     };
 
-    const { data, error } = await supabaseClient
-      .from('categories')
-      .insert(dbCategory)
-      .select()
-      .single();
+    const data = await apiFetch(`${API_BASE}/categories.php`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
 
-    if (error) throw error;
     invalidateCache('categories');
     return mapCategoryFromDB(data);
   } catch (err) {
@@ -228,14 +192,16 @@ async function addCategory(type, category) {
 
 async function updateCategory(type, id, updates) {
   try {
-    const { data, error } = await supabaseClient
-      .from('categories')
-      .update({ name: updates.name })
-      .eq('id', id)
-      .select()
-      .single();
+    const body = {
+      id: id,
+      name: updates.name,
+    };
 
-    if (error) throw error;
+    const data = await apiFetch(`${API_BASE}/categories.php`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    });
+
     invalidateCache('categories');
     return mapCategoryFromDB(data);
   } catch (err) {
@@ -246,12 +212,9 @@ async function updateCategory(type, id, updates) {
 
 async function deleteCategory(type, id) {
   try {
-    const { error } = await supabaseClient
-      .from('categories')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    await apiFetch(`${API_BASE}/categories.php?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
     invalidateCache('categories');
   } catch (err) {
     console.error('Erro ao deletar categoria:', err);
@@ -259,19 +222,13 @@ async function deleteCategory(type, id) {
 }
 
 // ============================================
-// GELATO SIZES (somente leitura, dados vem do seed)
+// GELATO SIZES (somente leitura)
 // ============================================
 
 async function getGelatoSizes() {
   try {
     if (_cache.gelatoSizes) return _cache.gelatoSizes;
-
-    const { data, error } = await supabaseClient
-      .from('gelato_sizes')
-      .select('*')
-      .order('price', { ascending: true });
-
-    if (error) throw error;
+    const data = await apiFetch(`${API_BASE}/extras.php?table=gelato_sizes`);
     _cache.gelatoSizes = data || [];
     return _cache.gelatoSizes;
   } catch (err) {
@@ -281,19 +238,13 @@ async function getGelatoSizes() {
 }
 
 // ============================================
-// TOPPINGS (somente leitura, dados vem do seed)
+// TOPPINGS (somente leitura)
 // ============================================
 
 async function getToppings() {
   try {
     if (_cache.toppings) return _cache.toppings;
-
-    const { data, error } = await supabaseClient
-      .from('toppings')
-      .select('*')
-      .order('name', { ascending: true });
-
-    if (error) throw error;
+    const data = await apiFetch(`${API_BASE}/extras.php?table=toppings`);
     _cache.toppings = data || [];
     return _cache.toppings;
   } catch (err) {
@@ -303,19 +254,13 @@ async function getToppings() {
 }
 
 // ============================================
-// CHOCOLATE BOXES (somente leitura, dados vem do seed)
+// CHOCOLATE BOXES (somente leitura)
 // ============================================
 
 async function getChocolateBoxes() {
   try {
     if (_cache.chocolateBoxes) return _cache.chocolateBoxes;
-
-    const { data, error } = await supabaseClient
-      .from('chocolate_boxes')
-      .select('*')
-      .order('units', { ascending: true });
-
-    if (error) throw error;
+    const data = await apiFetch(`${API_BASE}/extras.php?table=chocolate_boxes`);
     _cache.chocolateBoxes = data || [];
     return _cache.chocolateBoxes;
   } catch (err) {
@@ -347,47 +292,6 @@ function mapCategoryFromDB(row) {
     type: row.type,
   };
 }
-
-// ============================================
-// UPLOAD DE IMAGEM PARA SUPABASE STORAGE
-// ============================================
-// Para usar uploads de imagem no Supabase Storage,
-// crie um bucket chamado "product-images" no painel.
-// Descomente e use as funcoes abaixo:
-//
-// async function uploadProductImage(file, type, productId) {
-//   const ext = file.name.split('.').pop();
-//   const path = `${type}/${productId}_${Date.now()}.${ext}`;
-//
-//   const { data, error } = await supabaseClient.storage
-//     .from('product-images')
-//     .upload(path, file, { cacheControl: '3600', upsert: false });
-//
-//   if (error) throw error;
-//
-//   const { data: urlData } = supabase.storage
-//     .from('product-images')
-//     .getPublicUrl(path);
-//
-//   return urlData.publicUrl;
-// }
-//
-// async function deleteProductImage(imageUrl) {
-//   if (!imageUrl) return;
-//   try {
-//     // Extrair o path do URL publico
-//     const url = new URL(imageUrl);
-//     const pathParts = url.pathname.split('/storage/v1/object/public/product-images/');
-//     if (pathParts.length < 2) return;
-//     const filePath = pathParts[1];
-//
-//     await supabaseClient.storage
-//       .from('product-images')
-//       .remove([filePath]);
-//   } catch (e) {
-//     console.warn('Erro ao deletar imagem:', e);
-//   }
-// }
 
 // ---- Utilities ----
 function formatPrice(value) {
