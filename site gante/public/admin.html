@@ -196,22 +196,14 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Foto do Produto</label>
-          <div class="image-upload-area" id="imageUploadArea">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <path d="M21 15l-5-5L5 21"/>
-            </svg>
-            <span>Clique ou arraste uma imagem</span>
-            <small>JPG, PNG ou WebP (max 2MB)</small>
-            <input type="file" id="prodImage" accept="image/jpeg,image/png,image/webp">
-          </div>
-          <div id="imagePreviewWrap" style="display:none; margin-top:8px; text-align:center;">
+          <label for="prodImageFile">Arquivo da Imagem</label>
+          <input type="text" id="prodImageFile" placeholder="Ex: stracciatella.jpg">
+          <small style="display:block; margin-top:4px; color:rgba(15,59,46,0.5); font-size:0.8rem;">
+            Coloque a imagem na pasta <code style="background:rgba(232,217,197,0.5); padding:1px 6px; border-radius:3px;">images/produtos/</code> e digite o nome do arquivo com extensao (ex: pistacchio.png, brigadeiro.webp)
+          </small>
+          <div id="imagePreviewWrap" style="display:none; margin-top:12px; text-align:center;">
             <img id="imagePreview" alt="Preview" style="max-height:150px; border-radius:8px; margin:0 auto;">
-            <button type="button" class="image-remove-btn" id="imageRemoveBtn">Remover imagem</button>
           </div>
-          <input type="hidden" id="prodImageUrl" value="">
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%;">Salvar</button>
       </form>

@@ -4,7 +4,6 @@
 
 const ADMIN_PASSWORD = 'gante2024';
 let pendingDelete = null;
-let pendingImageData = null; // Base64 da imagem selecionada
 
 document.addEventListener('DOMContentLoaded', () => {
   initData();
@@ -101,75 +100,33 @@ function initMobileSidebar() {
   });
 }
 
-// ---- Image Upload ----
+// ---- Image Filename Preview ----
 function initImageUpload() {
-  const fileInput = document.getElementById('prodImage');
-  const uploadArea = document.getElementById('imageUploadArea');
+  const fileInput = document.getElementById('prodImageFile');
   const previewWrap = document.getElementById('imagePreviewWrap');
   const previewImg = document.getElementById('imagePreview');
-  const removeBtn = document.getElementById('imageRemoveBtn');
 
-  fileInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Validar tamanho (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      showToast('A imagem deve ter no maximo 2MB.', 'error');
-      fileInput.value = '';
-      return;
+  // Mostra preview ao digitar o nome do arquivo
+  fileInput.addEventListener('input', () => {
+    const filename = fileInput.value.trim();
+    if (filename) {
+      const imagePath = 'images/produtos/' + filename;
+      previewImg.src = imagePath;
+      previewImg.onerror = () => {
+        previewWrap.style.display = 'none';
+      };
+      previewImg.onload = () => {
+        previewWrap.style.display = 'block';
+      };
+    } else {
+      previewWrap.style.display = 'none';
     }
-
-    // Validar tipo
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      showToast('Formato invalido. Use JPG, PNG ou WebP.', 'error');
-      fileInput.value = '';
-      return;
-    }
-
-    // Converter para base64 (localStorage) ou fazer upload para Firebase
-    try {
-      // ============================================
-      // FIREBASE: Upload para Firebase Storage
-      // ============================================
-      // Descomente o bloco abaixo e comente o bloco "LOCALSTORAGE"
-      //
-      // const type = document.getElementById('prodEditType').value;
-      // const productId = document.getElementById('prodEditId').value || ('temp_' + Date.now());
-      // const url = await uploadProductImage(file, type, productId);
-      // pendingImageData = url;
-
-      // LOCALSTORAGE: Converter para base64
-      const dataUrl = await readFileAsDataURL(file);
-      pendingImageData = dataUrl;
-
-      // Mostrar preview
-      previewImg.src = pendingImageData;
-      uploadArea.style.display = 'none';
-      previewWrap.style.display = 'block';
-    } catch (err) {
-      showToast('Erro ao processar imagem.', 'error');
-    }
-  });
-
-  removeBtn.addEventListener('click', () => {
-    pendingImageData = null;
-    document.getElementById('prodImageUrl').value = '';
-    fileInput.value = '';
-    uploadArea.style.display = 'flex';
-    previewWrap.style.display = 'none';
   });
 }
 
 function resetImageUpload() {
-  pendingImageData = null;
-  const fileInput = document.getElementById('prodImage');
-  const uploadArea = document.getElementById('imageUploadArea');
-  const previewWrap = document.getElementById('imagePreviewWrap');
-  fileInput.value = '';
-  uploadArea.style.display = 'flex';
-  previewWrap.style.display = 'none';
-  document.getElementById('prodImageUrl').value = '';
+  document.getElementById('prodImageFile').value = '';
+  document.getElementById('imagePreviewWrap').style.display = 'none';
 }
 
 // Gera hue a partir do nome (mesma funcao do main.js)
@@ -327,11 +284,9 @@ function initProductModal() {
     const editId = document.getElementById('prodEditId').value;
     const type = document.getElementById('prodEditType').value;
 
-    // Determinar URL da imagem
-    let imageUrl = document.getElementById('prodImageUrl').value || '';
-    if (pendingImageData) {
-      imageUrl = pendingImageData;
-    }
+    // Determinar nome do arquivo da imagem
+    const imageFile = document.getElementById('prodImageFile').value.trim();
+    const imageUrl = imageFile ? 'images/produtos/' + imageFile : '';
 
     const productData = {
       name: document.getElementById('prodName').value.trim(),
@@ -381,12 +336,18 @@ function openProductModal(type, productId = null) {
     document.getElementById('prodPrice').value = product.price;
     document.getElementById('prodCategory').value = product.category;
 
-    // Se ja tem imagem, mostrar preview
+    // Se ja tem imagem, preencher o campo com o nome do arquivo
     if (product.imageUrl && product.imageUrl.length > 0) {
-      document.getElementById('prodImageUrl').value = product.imageUrl;
+      // Extrair apenas o nome do arquivo do path (ex: "images/produtos/pistacchio.jpg" -> "pistacchio.jpg")
+      const filename = product.imageUrl.replace(/^images\/produtos\//, '');
+      document.getElementById('prodImageFile').value = filename;
       document.getElementById('imagePreview').src = product.imageUrl;
-      document.getElementById('imageUploadArea').style.display = 'none';
-      document.getElementById('imagePreviewWrap').style.display = 'block';
+      document.getElementById('imagePreview').onload = () => {
+        document.getElementById('imagePreviewWrap').style.display = 'block';
+      };
+      document.getElementById('imagePreview').onerror = () => {
+        document.getElementById('imagePreviewWrap').style.display = 'none';
+      };
     }
   } else {
     title.textContent = 'Novo ' + (type === 'gelato' ? 'Gelato' : 'Chocolate');
