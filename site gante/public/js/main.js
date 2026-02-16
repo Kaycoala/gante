@@ -206,7 +206,7 @@ let orderState = {
   gelatoQty: 1,
   // Chocolate state
   chocoBox: null,
-  selectedChocos: [],
+  selectedChocos: {}, // { chocolateId: quantity }
   chocoQty: 1,
 };
 
@@ -353,13 +353,13 @@ function renderChocolateBoxes() {
       container.querySelectorAll('.size-option').forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
       orderState.chocoBox = CHOCOLATE_BOXES.find(b => b.id === opt.dataset.box);
-      orderState.selectedChocos = [];
+      orderState.selectedChocos = {};
       updateChocoSelection();
     });
   });
 }
 
-// Chocolate Choices
+// Chocolate Choices (com quantidade por chocolate)
 function renderChocolateChoices() {
   const container = document.getElementById('chocolateChoices');
   const chocos = getProducts('chocolate').filter(c => 
@@ -370,28 +370,44 @@ function renderChocolateChoices() {
     const hasImg = c.imageUrl && c.imageUrl.length > 0;
     const hue = hashStringToHue(c.name);
     return `
-      <div class="flavor-item" data-id="${c.id}">
-        <div class="flavor-check"></div>
-        ${hasImg
-          ? `<img class="flavor-thumb" src="${c.imageUrl}" alt="${c.name}">`
-          : `<span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>`
-        }
-        <span>${c.name}</span>
+      <div class="choco-choice-item" data-id="${c.id}">
+        <div class="choco-choice-info">
+          ${hasImg
+            ? `<img class="flavor-thumb" src="${c.imageUrl}" alt="${c.name}">`
+            : `<span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>`
+          }
+          <span class="choco-choice-name">${c.name}</span>
+        </div>
+        <div class="choco-qty-control">
+          <button type="button" class="choco-qty-btn choco-qty-minus" data-id="${c.id}">-</button>
+          <span class="choco-qty-value" data-id="${c.id}">0</span>
+          <button type="button" class="choco-qty-btn choco-qty-plus" data-id="${c.id}">+</button>
+        </div>
       </div>
     `;
   }).join('');
 
-  container.querySelectorAll('.flavor-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const id = item.dataset.id;
-      if (item.classList.contains('disabled')) return;
+  // Bind + buttons
+  container.querySelectorAll('.choco-qty-plus').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const totalSelected = getChocoTotalCount();
+      const maxUnits = orderState.chocoBox ? orderState.chocoBox.units : 6;
+      if (totalSelected >= maxUnits) return;
+      orderState.selectedChocos[id] = (orderState.selectedChocos[id] || 0) + 1;
+      updateChocoSelection();
+    });
+  });
 
-      if (orderState.selectedChocos.includes(id)) {
-        orderState.selectedChocos = orderState.selectedChocos.filter(c => c !== id);
-      } else {
-        if (orderState.chocoBox && orderState.selectedChocos.length >= orderState.chocoBox.units) return;
-        orderState.selectedChocos.push(id);
-      }
+  // Bind - buttons
+  container.querySelectorAll('.choco-qty-minus').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (!orderState.selectedChocos[id] || orderState.selectedChocos[id] <= 0) return;
+      orderState.selectedChocos[id] -= 1;
+      if (orderState.selectedChocos[id] === 0) delete orderState.selectedChocos[id];
       updateChocoSelection();
     });
   });
@@ -399,17 +415,32 @@ function renderChocolateChoices() {
   updateChocoSelection();
 }
 
+function getChocoTotalCount() {
+  return Object.values(orderState.selectedChocos).reduce((sum, qty) => sum + qty, 0);
+}
+
 function updateChocoSelection() {
   const container = document.getElementById('chocolateChoices');
   const maxChocos = orderState.chocoBox ? orderState.chocoBox.units : 6;
+  const totalSelected = getChocoTotalCount();
   const countEl = document.getElementById('chocoCount');
-  countEl.textContent = `(${orderState.selectedChocos.length}/${maxChocos})`;
+  countEl.textContent = `(${totalSelected}/${maxChocos})`;
+  const isFull = totalSelected >= maxChocos;
 
-  container.querySelectorAll('.flavor-item').forEach(item => {
+  container.querySelectorAll('.choco-choice-item').forEach(item => {
     const id = item.dataset.id;
-    const isSelected = orderState.selectedChocos.includes(id);
-    item.classList.toggle('selected', isSelected);
-    item.classList.toggle('disabled', !isSelected && orderState.selectedChocos.length >= maxChocos);
+    const qty = orderState.selectedChocos[id] || 0;
+    const qtyDisplay = item.querySelector('.choco-qty-value[data-id="' + id + '"]');
+    if (qtyDisplay) qtyDisplay.textContent = qty;
+
+    item.classList.toggle('selected', qty > 0);
+
+    // Desabilitar botao + se caixa esta cheia
+    const plusBtn = item.querySelector('.choco-qty-plus');
+    if (plusBtn) {
+      plusBtn.disabled = isFull;
+      plusBtn.classList.toggle('disabled', isFull);
+    }
   });
 }
 
@@ -500,16 +531,23 @@ function addChocolateToOrder() {
     showToast('Selecione uma caixa.', 'error');
     return;
   }
-  if (orderState.selectedChocos.length === 0) {
+  const totalSelected = getChocoTotalCount();
+  if (totalSelected === 0) {
     showToast('Selecione pelo menos um chocolate.', 'error');
+    return;
+  }
+  if (totalSelected !== orderState.chocoBox.units) {
+    showToast(`Selecione exatamente ${orderState.chocoBox.units} unidades para esta caixa. Voce selecionou ${totalSelected}.`, 'error');
     return;
   }
 
   const chocolates = getProducts('chocolate');
-  const chocoNames = orderState.selectedChocos.map(id => {
+  const chocoDescParts = [];
+  for (const [id, qty] of Object.entries(orderState.selectedChocos)) {
     const c = chocolates.find(p => p.id === id);
-    return c ? c.name : id;
-  });
+    const name = c ? c.name : id;
+    chocoDescParts.push(qty > 1 ? `${name} (x${qty})` : name);
+  }
 
   const itemPrice = orderState.chocoBox.price * orderState.chocoQty;
 
@@ -517,14 +555,14 @@ function addChocolateToOrder() {
     id: 'oi' + Date.now(),
     type: 'chocolate',
     box: orderState.chocoBox.name,
-    chocolates: chocoNames,
+    chocolates: chocoDescParts,
     qty: orderState.chocoQty,
     price: itemPrice,
-    description: `${orderState.chocoBox.name} (${orderState.chocoBox.units}un) - ${chocoNames.join(', ')} (x${orderState.chocoQty})`
+    description: `${orderState.chocoBox.name} (${orderState.chocoBox.units}un) - ${chocoDescParts.join(', ')} (x${orderState.chocoQty})`
   });
 
   // Reset chocolate selections
-  orderState.selectedChocos = [];
+  orderState.selectedChocos = {};
   orderState.chocoQty = 1;
   document.getElementById('chocoQty').value = 1;
   updateChocoSelection();

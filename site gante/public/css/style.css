@@ -849,6 +849,99 @@ p {
   flex-shrink: 0;
 }
 
+/* Chocolate Choice Item (com quantidade) */
+.choco-choice-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1.5px solid rgba(var(--color-cream-rgb), 0.8);
+  border-radius: var(--radius-md);
+  cursor: default;
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+}
+
+.choco-choice-item:hover {
+  border-color: var(--color-gold);
+  background: rgba(var(--color-gold-rgb), 0.05);
+}
+
+.choco-choice-item.selected {
+  border-color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb), 0.05);
+}
+
+.choco-choice-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.choco-choice-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.choco-qty-control {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.choco-qty-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgba(var(--color-primary-rgb), 0.2);
+  background: rgba(var(--color-cream-rgb), 0.4);
+  color: var(--color-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.choco-qty-btn:first-child {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.choco-qty-btn:last-child {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.choco-qty-btn:hover:not(.disabled) {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.choco-qty-btn.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.choco-qty-value {
+  width: 34px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-top: 1.5px solid rgba(var(--color-primary-rgb), 0.2);
+  border-bottom: 1.5px solid rgba(var(--color-primary-rgb), 0.2);
+  background: #fff;
+  color: var(--color-primary);
+}
+
 /* Toppings */
 .toppings-section h4 {
   margin-bottom: 12px;
