@@ -6,6 +6,17 @@
 // Para usar Firebase, descomente os blocos marcados com
 // "FIREBASE:" e comente os blocos marcados com "LOCALSTORAGE:".
 // Certifique-se de ter configurado o firebase-config.js antes.
+//
+// COMO FUNCIONA O SISTEMA DE DADOS:
+// 1. Os produtos "oficiais" ficam no data.js (SEED_GELATOS, SEED_CHOCOLATES, SEED_DIVERSOS)
+// 2. No primeiro acesso, os dados do data.js sao copiados para o localStorage
+// 3. O admin pode criar/editar/excluir produtos via painel (salva no localStorage)
+// 4. Quando voce altera o data.js, incremente DATA_VERSION abaixo
+// 5. No proximo carregamento, o sistema faz MERGE inteligente:
+//    - Produtos do seed sao atualizados (preco, nome, descricao, etc)
+//    - Imagens adicionadas pelo admin sao preservadas
+//    - Produtos criados pelo admin (nao existentes no seed) sao mantidos
+//    - Produtos removidos do seed sao removidos do localStorage
 
 const STORAGE_KEYS = {
   GELATOS: 'gante_gelatos',
@@ -17,71 +28,65 @@ const STORAGE_KEYS = {
 };
 
 // ---- Initialization ----
-// Versao dos dados - incrementar ao mudar estrutura para forcar re-seed
-const DATA_VERSION = '4';
+// INCREMENTE este numero sempre que alterar produtos no data.js
+// Isso forca o re-sync dos dados no proximo carregamento
+const DATA_VERSION = '5';
+
+// Funcao auxiliar para fazer merge inteligente de produtos
+// - Atualiza dados do seed (preco, nome, descricao, categoria)
+// - Preserva imageUrl se o admin ja adicionou uma imagem
+// - Preserva produtos customizados criados pelo admin
+// - Remove produtos que foram deletados do seed
+function mergeProducts(seedProducts, existingProducts) {
+  const merged = [];
+
+  // 1. Para cada produto no seed, fazer update ou insert
+  seedProducts.forEach(seed => {
+    const existing = existingProducts.find(e => e.id === seed.id);
+    if (existing) {
+      // UPDATE: manter imagem do admin, mas atualizar o resto do seed
+      merged.push({
+        ...seed,
+        imageUrl: existing.imageUrl || seed.imageUrl
+      });
+    } else {
+      // INSERT: produto novo no seed
+      merged.push({ ...seed });
+    }
+  });
+
+  // 2. Manter produtos customizados criados pelo admin (nao existem no seed)
+  existingProducts.forEach(existing => {
+    const isInSeed = seedProducts.find(s => s.id === existing.id);
+    if (!isInSeed) {
+      merged.push(existing);
+    }
+  });
+
+  return merged;
+}
 
 function initData() {
   const currentVersion = localStorage.getItem('gante_data_version');
   if (currentVersion === DATA_VERSION && localStorage.getItem(STORAGE_KEYS.INITIALIZED)) return;
 
-  // Re-seed com nova estrutura (preserva imagens se existirem)
+  // Re-seed com nova estrutura (preserva imagens e produtos customizados)
   if (currentVersion && currentVersion !== DATA_VERSION) {
-    // Migrar: manter imagens ja adicionadas pelo admin
     const existingGelatos = JSON.parse(localStorage.getItem(STORAGE_KEYS.GELATOS) || '[]');
     const existingChocolates = JSON.parse(localStorage.getItem(STORAGE_KEYS.CHOCOLATES) || '[]');
-
-    const mergedGelatos = SEED_GELATOS.map(seed => {
-      const existing = existingGelatos.find(e => e.id === seed.id);
-      if (existing && existing.imageUrl) {
-        return { ...seed, imageUrl: existing.imageUrl };
-      }
-      return seed;
-    });
-
-    const mergedChocolates = SEED_CHOCOLATES.map(seed => {
-      const existing = existingChocolates.find(e => e.id === seed.id);
-      if (existing && existing.imageUrl) {
-        return { ...seed, imageUrl: existing.imageUrl };
-      }
-      return seed;
-    });
-
-    // Adicionar produtos customizados que nao estao no seed
-    existingGelatos.forEach(e => {
-      if (!SEED_GELATOS.find(s => s.id === e.id)) {
-        mergedGelatos.push(e);
-      }
-    });
-    existingChocolates.forEach(e => {
-      if (!SEED_CHOCOLATES.find(s => s.id === e.id)) {
-        mergedChocolates.push(e);
-      }
-    });
-
-    // Merge diversos
     const existingDiversos = JSON.parse(localStorage.getItem(STORAGE_KEYS.DIVERSOS) || '[]');
-    const mergedDiversos = SEED_DIVERSOS.map(seed => {
-      const existing = existingDiversos.find(e => e.id === seed.id);
-      if (existing && existing.imageUrl) {
-        return { ...seed, imageUrl: existing.imageUrl };
-      }
-      return seed;
-    });
-    existingDiversos.forEach(e => {
-      if (!SEED_DIVERSOS.find(s => s.id === e.id)) {
-        mergedDiversos.push(e);
-      }
-    });
 
-    localStorage.setItem(STORAGE_KEYS.GELATOS, JSON.stringify(mergedGelatos));
-    localStorage.setItem(STORAGE_KEYS.CHOCOLATES, JSON.stringify(mergedChocolates));
-    localStorage.setItem(STORAGE_KEYS.DIVERSOS, JSON.stringify(mergedDiversos));
+    localStorage.setItem(STORAGE_KEYS.GELATOS, JSON.stringify(mergeProducts(SEED_GELATOS, existingGelatos)));
+    localStorage.setItem(STORAGE_KEYS.CHOCOLATES, JSON.stringify(mergeProducts(SEED_CHOCOLATES, existingChocolates)));
+    localStorage.setItem(STORAGE_KEYS.DIVERSOS, JSON.stringify(mergeProducts(SEED_DIVERSOS, existingDiversos)));
   } else {
+    // Primeiro acesso: carregar tudo do seed
     localStorage.setItem(STORAGE_KEYS.GELATOS, JSON.stringify(SEED_GELATOS));
     localStorage.setItem(STORAGE_KEYS.CHOCOLATES, JSON.stringify(SEED_CHOCOLATES));
     localStorage.setItem(STORAGE_KEYS.DIVERSOS, JSON.stringify(SEED_DIVERSOS));
   }
 
+  // Categorias sempre sao atualizadas pelo seed (fonte da verdade)
   localStorage.setItem(STORAGE_KEYS.GELATO_CATEGORIES, JSON.stringify(GELATO_CATEGORIES));
   localStorage.setItem(STORAGE_KEYS.CHOCOLATE_CATEGORIES, JSON.stringify(CHOCOLATE_CATEGORIES));
   localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
