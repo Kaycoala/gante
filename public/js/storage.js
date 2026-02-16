@@ -17,7 +17,7 @@ const STORAGE_KEYS = {
 
 // ---- Initialization ----
 // Versao dos dados - incrementar ao mudar estrutura para forcar re-seed
-const DATA_VERSION = '2';
+const DATA_VERSION = '3';
 
 function initData() {
   const currentVersion = localStorage.getItem('gante_data_version');

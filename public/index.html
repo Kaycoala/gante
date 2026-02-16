@@ -103,90 +103,83 @@
         <div class="order-tabs">
           <button class="order-tab active" data-tab="gelato">Gelato</button>
           <button class="order-tab" data-tab="chocolate">Chocolates</button>
+          <button class="order-tab" data-tab="diversos">Diversos</button>
         </div>
 
         <!-- GELATO TAB -->
         <div class="order-content active" id="orderGelato">
-          <div class="order-layout">
-            <div class="order-config">
-              <h4>Escolha o Tamanho</h4>
-              <div class="size-selector" id="gelatoSizes"></div>
+          <div class="order-config">
+            <h4>Escolha o Tamanho</h4>
+            <div class="size-selector" id="gelatoSizes"></div>
 
-              <h4>Escolha os Sabores <span id="flavorCount" style="font-family: var(--font-body); font-weight: 400; font-size: 0.85rem; color: rgba(15,59,46,0.5);"></span></h4>
-              <div class="flavor-grid" id="gelatoFlavors"></div>
+            <h4>Escolha os Sabores <span id="flavorCount" style="font-family: var(--font-body); font-weight: 400; font-size: 0.85rem; color: rgba(15,59,46,0.5);"></span></h4>
+            <div class="flavor-grid" id="gelatoFlavors"></div>
 
-              <div class="toppings-section">
-                <h4>Coberturas (Opcional)</h4>
-                <div class="topping-grid" id="toppingsGrid"></div>
-              </div>
-
-              <div style="display:flex; align-items:center; gap:16px; margin-top:8px;">
-                <label style="font-weight:600; font-size:0.9rem;">Quantidade:</label>
-                <div class="qty-control">
-                  <button type="button" id="gelatoQtyMinus">-</button>
-                  <input type="number" id="gelatoQty" value="1" min="1" max="20" readonly>
-                  <button type="button" id="gelatoQtyPlus">+</button>
-                </div>
-              </div>
-
-              <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addGelatoBtn">
-                Adicionar ao Pedido
-              </button>
+            <div class="toppings-section">
+              <h4>Coberturas (Opcional)</h4>
+              <div class="topping-grid" id="toppingsGrid"></div>
             </div>
 
-            <div class="order-summary-panel" id="orderSummary">
-              <h3>Resumo do Pedido</h3>
-              <div class="order-items" id="orderItems">
-                <div class="order-empty">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                  </svg>
-                  <p>Seu pedido esta vazio</p>
-                </div>
+            <div style="display:flex; align-items:center; gap:16px; margin-top:8px;">
+              <label style="font-weight:600; font-size:0.9rem;">Quantidade:</label>
+              <div class="qty-control">
+                <button type="button" id="gelatoQtyMinus">-</button>
+                <input type="number" id="gelatoQty" value="1" min="1" max="20" readonly>
+                <button type="button" id="gelatoQtyPlus">+</button>
               </div>
-              <div class="order-total" id="orderTotal" style="display:none;">
-                <span>Total</span>
-                <span id="totalValue">R$ 0,00</span>
-              </div>
-              <button class="btn btn-secondary" style="width:100%; margin-top:16px; display:none;" id="finalizarBtn">
-                Finalizar Pedido
-              </button>
             </div>
+
+            <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addGelatoBtn">
+              Adicionar ao Pedido
+            </button>
           </div>
         </div>
 
         <!-- CHOCOLATE TAB -->
         <div class="order-content" id="orderChocolate">
-          <div class="order-layout">
-            <div class="order-config">
-              <h4>Escolha os Chocolates e a Quantidade</h4>
-              <div class="flavor-grid" id="chocolateChoices"></div>
+          <div class="order-config">
+            <h4>Escolha os Chocolates e a Quantidade</h4>
+            <div class="flavor-grid" id="chocolateChoices"></div>
 
-              <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addChocolateBtn">
-                Adicionar ao Pedido
-              </button>
-            </div>
+            <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addChocolateBtn">
+              Adicionar ao Pedido
+            </button>
+          </div>
+        </div>
 
-            <!-- Same summary panel (shared) -->
-            <div class="order-summary-panel" id="orderSummary2">
-              <h3>Resumo do Pedido</h3>
-              <div class="order-items" id="orderItems2">
-                <div class="order-empty">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                  </svg>
-                  <p>Seu pedido esta vazio</p>
-                </div>
-              </div>
-              <div class="order-total" id="orderTotal2" style="display:none;">
-                <span>Total</span>
-                <span id="totalValue2">R$ 0,00</span>
-              </div>
-              <button class="btn btn-secondary" style="width:100%; margin-top:16px; display:none;" id="finalizarBtn2">
-                Finalizar Pedido
-              </button>
+        <!-- DIVERSOS TAB -->
+        <div class="order-content" id="orderDiversos">
+          <div class="order-config">
+            <h4>Pedidos Diversos</h4>
+            <p style="font-size:0.9rem; color:rgba(15,59,46,0.6); margin-bottom:20px;">Adicione itens avulsos sem limite de quantidade.</p>
+            <div class="flavor-grid" id="diversosChoices"></div>
+
+            <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addDiversosBtn">
+              Adicionar ao Pedido
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESUMO DO PEDIDO (fora do builder, sempre visivel) -->
+      <div class="order-summary-standalone animate-on-scroll">
+        <div class="order-summary-panel" id="orderSummaryMain">
+          <h3>Resumo do Pedido</h3>
+          <div class="order-items" id="orderItems">
+            <div class="order-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+              </svg>
+              <p>Seu pedido esta vazio</p>
             </div>
           </div>
+          <div class="order-total" id="orderTotal" style="display:none;">
+            <span>Total</span>
+            <span id="totalValue">R$ 0,00</span>
+          </div>
+          <button class="btn btn-secondary" style="width:100%; margin-top:16px; display:none;" id="finalizarBtn">
+            Finalizar Pedido
+          </button>
         </div>
       </div>
     </div>

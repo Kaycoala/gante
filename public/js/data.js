@@ -78,9 +78,10 @@ const SEED_CHOCOLATES = [
 ];
 
 const GELATO_SIZES = [
-  { id: 'P', name: 'Pequeno', balls: 1, price: 14.00 },
-  { id: 'M', name: 'Medio', balls: 2, price: 22.00 },
-  { id: 'G', name: 'Grande', balls: 3, price: 28.00 },
+  { id: '240ml', name: '240 Ml', balls: 1, price: 14.00 },
+  { id: '500ml', name: '500 Ml', balls: 2, price: 22.00 },
+  { id: '600g', name: '600 Gramas', balls: 3, price: 28.00 },
+  { id: '1kg', name: '1 Kg', balls: 5, price: 45.00 },
 ];
 
 const CHOCOLATE_BOXES = [
@@ -96,4 +97,17 @@ const TOPPINGS = [
   { id: 't4', name: 'Granola', price: 3.00 },
   { id: 't5', name: 'Chantilly', price: 2.50 },
   { id: 't6', name: 'Castanhas Trituradas', price: 4.00 },
+];
+
+const SEED_DIVERSOS = [
+  { id: 'd1', name: 'Casquinha Simples', description: 'Casquinha crocante para acompanhar seu gelato.', price: 3.00, type: 'diversos', imageUrl: '' },
+  { id: 'd2', name: 'Casquinha Coberta', description: 'Casquinha com cobertura de chocolate belga.', price: 5.00, type: 'diversos', imageUrl: '' },
+  { id: 'd3', name: 'Agua Mineral', description: 'Agua mineral sem gas 500ml.', price: 4.00, type: 'diversos', imageUrl: '' },
+  { id: 'd4', name: 'Agua com Gas', description: 'Agua mineral com gas 500ml.', price: 5.00, type: 'diversos', imageUrl: '' },
+  { id: 'd5', name: 'Suco Natural', description: 'Suco natural da fruta do dia 300ml.', price: 10.00, type: 'diversos', imageUrl: '' },
+  { id: 'd6', name: 'Cafe Espresso', description: 'Cafe espresso curto ou longo.', price: 6.00, type: 'diversos', imageUrl: '' },
+  { id: 'd7', name: 'Cappuccino', description: 'Cappuccino italiano com espuma cremosa.', price: 10.00, type: 'diversos', imageUrl: '' },
+  { id: 'd8', name: 'Milkshake', description: 'Milkshake cremoso com o sabor de gelato da sua escolha.', price: 18.00, type: 'diversos', imageUrl: '' },
+  { id: 'd9', name: 'Affogato', description: 'Gelato de fior di latte com shot de cafe espresso.', price: 16.00, type: 'diversos', imageUrl: '' },
+  { id: 'd10', name: 'Brownie', description: 'Brownie artesanal de chocolate belga.', price: 12.00, type: 'diversos', imageUrl: '' },
 ];

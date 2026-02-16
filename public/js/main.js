@@ -206,6 +206,8 @@ let orderState = {
   gelatoQty: 1,
   // Chocolate state
   selectedChocos: {}, // { chocolateId: quantity }
+  // Diversos state
+  selectedDiversos: {}, // { diversoId: quantity }
 };
 
 function initOrderBuilder() {
@@ -214,6 +216,7 @@ function initOrderBuilder() {
   renderGelatoFlavors();
   renderToppings();
   renderChocolateChoices();
+  renderDiversosChoices();
   initQtyControls();
   initAddButtons();
   initFinalizeButtons();
@@ -223,13 +226,19 @@ function initOrderBuilder() {
 function initOrderTabs() {
   const tabs = document.querySelectorAll('.order-tab');
   const contents = document.querySelectorAll('.order-content');
+  const tabMap = {
+    gelato: 'orderGelato',
+    chocolate: 'orderChocolate',
+    diversos: 'orderDiversos',
+  };
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('active'));
       contents.forEach(c => c.classList.remove('active'));
       tab.classList.add('active');
-      document.getElementById(tab.dataset.tab === 'gelato' ? 'orderGelato' : 'orderChocolate').classList.add('active');
+      const targetId = tabMap[tab.dataset.tab];
+      if (targetId) document.getElementById(targetId).classList.add('active');
     });
   });
 }
@@ -240,7 +249,6 @@ function renderGelatoSizes() {
   container.innerHTML = GELATO_SIZES.map((s, i) => `
     <div class="size-option ${i === 0 ? 'selected' : ''}" data-size="${s.id}">
       <strong>${s.name}</strong>
-      <small>${s.balls} bola${s.balls > 1 ? 's' : ''}</small>
       <span class="size-price">${formatPrice(s.price)}</span>
     </div>
   `).join('');
@@ -432,6 +440,65 @@ function updateChocoSelection() {
   });
 }
 
+// Diversos Choices (sem limite minimo/maximo)
+function renderDiversosChoices() {
+  const container = document.getElementById('diversosChoices');
+  const diversos = typeof SEED_DIVERSOS !== 'undefined' ? SEED_DIVERSOS : [];
+
+  container.innerHTML = diversos.map(d => {
+    const hue = hashStringToHue(d.name);
+    return `
+      <div class="choco-choice-item" data-id="${d.id}">
+        <div class="choco-choice-info">
+          <span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>
+          <span class="choco-choice-name">${d.name}</span>
+          <span class="choco-choice-price">${formatPrice(d.price)}/un</span>
+        </div>
+        <div class="choco-qty-control">
+          <button type="button" class="choco-qty-btn diversos-qty-minus" data-id="${d.id}">-</button>
+          <span class="choco-qty-value" data-id="${d.id}">0</span>
+          <button type="button" class="choco-qty-btn diversos-qty-plus" data-id="${d.id}">+</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.diversos-qty-plus').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      orderState.selectedDiversos[id] = (orderState.selectedDiversos[id] || 0) + 1;
+      updateDiversosSelection();
+    });
+  });
+
+  container.querySelectorAll('.diversos-qty-minus').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (!orderState.selectedDiversos[id] || orderState.selectedDiversos[id] <= 0) return;
+      orderState.selectedDiversos[id] -= 1;
+      if (orderState.selectedDiversos[id] === 0) delete orderState.selectedDiversos[id];
+      updateDiversosSelection();
+    });
+  });
+
+  updateDiversosSelection();
+}
+
+function updateDiversosSelection() {
+  const container = document.getElementById('diversosChoices');
+
+  container.querySelectorAll('.choco-choice-item').forEach(item => {
+    const id = item.dataset.id;
+    const qty = orderState.selectedDiversos[id] || 0;
+    const qtyDisplay = item.querySelector('.choco-qty-value[data-id="' + id + '"]');
+    if (qtyDisplay) qtyDisplay.textContent = qty;
+
+    item.classList.toggle('selected', qty > 0);
+  });
+}
+
 // Quantity Controls
 function initQtyControls() {
   // Gelato
@@ -451,6 +518,7 @@ function initQtyControls() {
 function initAddButtons() {
   document.getElementById('addGelatoBtn').addEventListener('click', addGelatoToOrder);
   document.getElementById('addChocolateBtn').addEventListener('click', addChocolateToOrder);
+  document.getElementById('addDiversosBtn').addEventListener('click', addDiversosToOrder);
 }
 
 function addGelatoToOrder() {
@@ -464,7 +532,7 @@ function addGelatoToOrder() {
     return;
   }
   if (totalSelected !== orderState.gelatoSize.balls) {
-    showToast(`Selecione exatamente ${orderState.gelatoSize.balls} bola${orderState.gelatoSize.balls > 1 ? 's' : ''} para este tamanho. Voce selecionou ${totalSelected}.`, 'error');
+    showToast(`Selecione exatamente ${orderState.gelatoSize.balls} sabor${orderState.gelatoSize.balls > 1 ? 'es' : ''} para o tamanho ${orderState.gelatoSize.name}. Voce selecionou ${totalSelected}.`, 'error');
     return;
   }
 
@@ -547,45 +615,74 @@ function addChocolateToOrder() {
   showToast('Chocolates adicionados ao pedido!', 'success');
 }
 
-// Update Order Summary (both panels)
-function updateOrderSummary() {
-  const panels = [
-    { items: 'orderItems', total: 'orderTotal', value: 'totalValue', btn: 'finalizarBtn' },
-    { items: 'orderItems2', total: 'orderTotal2', value: 'totalValue2', btn: 'finalizarBtn2' },
-  ];
+function addDiversosToOrder() {
+  const diversos = typeof SEED_DIVERSOS !== 'undefined' ? SEED_DIVERSOS : [];
+  const totalSelected = Object.values(orderState.selectedDiversos).reduce((sum, qty) => sum + qty, 0);
+  
+  if (totalSelected === 0) {
+    showToast('Selecione pelo menos um item.', 'error');
+    return;
+  }
 
-  panels.forEach(panel => {
-    const itemsEl = document.getElementById(panel.items);
-    const totalEl = document.getElementById(panel.total);
-    const valueEl = document.getElementById(panel.value);
-    const btnEl = document.getElementById(panel.btn);
+  const descParts = [];
+  let itemPrice = 0;
 
-    if (orderState.items.length === 0) {
-      itemsEl.innerHTML = `
-        <div class="order-empty">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-          </svg>
-          <p>Seu pedido esta vazio</p>
-        </div>
-      `;
-      totalEl.style.display = 'none';
-      btnEl.style.display = 'none';
-    } else {
-      itemsEl.innerHTML = orderState.items.map(item => `
-        <div class="order-item">
-          <span class="order-item-name">${item.description}</span>
-          <span style="font-weight:600; margin: 0 12px;">${formatPrice(item.price)}</span>
-          <button class="order-item-remove" onclick="removeOrderItem('${item.id}')">Remover</button>
-        </div>
-      `).join('');
-      
-      const total = orderState.items.reduce((sum, item) => sum + item.price, 0);
-      valueEl.textContent = formatPrice(total);
-      totalEl.style.display = 'flex';
-      btnEl.style.display = 'block';
-    }
+  for (const [id, qty] of Object.entries(orderState.selectedDiversos)) {
+    const d = diversos.find(p => p.id === id);
+    const name = d ? d.name : id;
+    const unitPrice = d ? d.price : 0;
+    itemPrice += unitPrice * qty;
+    descParts.push(qty > 1 ? `${name} (x${qty})` : name);
+  }
+
+  orderState.items.push({
+    id: 'oi' + Date.now(),
+    type: 'diversos',
+    description: `Diversos - ${descParts.join(', ')}`,
+    qty: totalSelected,
+    price: itemPrice,
   });
+
+  // Reset
+  orderState.selectedDiversos = {};
+  updateDiversosSelection();
+
+  updateOrderSummary();
+  showToast('Itens diversos adicionados ao pedido!', 'success');
+}
+
+// Update Order Summary (single panel)
+function updateOrderSummary() {
+  const itemsEl = document.getElementById('orderItems');
+  const totalEl = document.getElementById('orderTotal');
+  const valueEl = document.getElementById('totalValue');
+  const btnEl = document.getElementById('finalizarBtn');
+
+  if (orderState.items.length === 0) {
+    itemsEl.innerHTML = `
+      <div class="order-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+        </svg>
+        <p>Seu pedido esta vazio</p>
+      </div>
+    `;
+    totalEl.style.display = 'none';
+    btnEl.style.display = 'none';
+  } else {
+    itemsEl.innerHTML = orderState.items.map(item => `
+      <div class="order-item">
+        <span class="order-item-name">${item.description}</span>
+        <span style="font-weight:600; margin: 0 12px;">${formatPrice(item.price)}</span>
+        <button class="order-item-remove" onclick="removeOrderItem('${item.id}')">Remover</button>
+      </div>
+    `).join('');
+    
+    const total = orderState.items.reduce((sum, item) => sum + item.price, 0);
+    valueEl.textContent = formatPrice(total);
+    totalEl.style.display = 'flex';
+    btnEl.style.display = 'block';
+  }
 }
 
 function removeOrderItem(id) {
@@ -596,7 +693,6 @@ function removeOrderItem(id) {
 // Finalize
 function initFinalizeButtons() {
   document.getElementById('finalizarBtn').addEventListener('click', openOrderModal);
-  document.getElementById('finalizarBtn2').addEventListener('click', openOrderModal);
   document.getElementById('modalClose').addEventListener('click', closeOrderModal);
   document.getElementById('orderModal').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeOrderModal();
@@ -701,10 +797,12 @@ function resetOrder() {
   orderState.selectedFlavors = {};
   orderState.selectedToppings = [];
   orderState.selectedChocos = {};
+  orderState.selectedDiversos = {};
   orderState.gelatoQty = 1;
   document.getElementById('gelatoQty').value = 1;
   updateFlavorSelection();
   updateChocoSelection();
+  updateDiversosSelection();
   document.querySelectorAll('#toppingsGrid .topping-item').forEach(i => i.classList.remove('selected'));
   updateOrderSummary();
 }
