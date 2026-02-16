@@ -61,6 +61,18 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
           Categorias
         </button>
+        <button class="admin-nav-item" data-view="tamanhos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+          Tamanhos
+        </button>
+        <button class="admin-nav-item" data-view="coberturas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12l2 2 4-4"/></svg>
+          Coberturas
+        </button>
+        <button class="admin-nav-item" data-view="caixas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 8l-2-4H5L3 8m18 0v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8m18 0H3m9 4v4m-2-2h4"/></svg>
+          Caixas
+        </button>
       </nav>
       <div class="admin-sidebar-footer">
         <button class="admin-nav-item" id="logoutBtn">
@@ -194,6 +206,75 @@
         </div>
       </div>
 
+      <!-- ---- TAMANHOS VIEW ---- -->
+      <div class="admin-view" id="viewTamanhos" style="display:none;">
+        <div class="admin-header">
+          <h1>Tamanhos de Gelato</h1>
+          <div class="admin-header-actions">
+            <button class="btn btn-primary btn-sm" id="addSizeBtn">+ Novo Tamanho</button>
+          </div>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Sabores</th>
+                <th>Preco</th>
+                <th>Ordem</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody id="sizesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ---- COBERTURAS VIEW ---- -->
+      <div class="admin-view" id="viewCoberturas" style="display:none;">
+        <div class="admin-header">
+          <h1>Coberturas</h1>
+          <div class="admin-header-actions">
+            <button class="btn btn-primary btn-sm" id="addToppingBtn">+ Nova Cobertura</button>
+          </div>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Preco</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody id="toppingsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ---- CAIXAS VIEW ---- -->
+      <div class="admin-view" id="viewCaixas" style="display:none;">
+        <div class="admin-header">
+          <h1>Caixas de Chocolate</h1>
+          <div class="admin-header-actions">
+            <button class="btn btn-primary btn-sm" id="addBoxBtn">+ Nova Caixa</button>
+          </div>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Unidades</th>
+                <th>Preco</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody id="boxesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -292,6 +373,89 @@
     </div>
   </div>
 
+  <!-- ========== SIZE MODAL ========== -->
+  <div class="modal-overlay" id="sizeModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="sizeModalTitle">Novo Tamanho</h3>
+        <button class="modal-close" id="sizeModalClose" aria-label="Fechar">&times;</button>
+      </div>
+      <form class="admin-form" id="sizeForm">
+        <input type="hidden" id="sizeEditId">
+        <div class="form-group">
+          <label for="sizeName">Nome</label>
+          <input type="text" id="sizeName" placeholder="Ex: Grande" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="sizeBalls">Qtd. Sabores</label>
+            <input type="number" id="sizeBalls" min="1" placeholder="1" required>
+          </div>
+          <div class="form-group">
+            <label for="sizePrice">Preco (R$)</label>
+            <input type="number" id="sizePrice" step="0.01" min="0" placeholder="0.00" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="sizeSortOrder">Ordem de Exibicao</label>
+          <input type="number" id="sizeSortOrder" min="0" placeholder="0">
+          <small style="display:block; margin-top:4px; color:rgba(15,59,46,0.5); font-size:0.8rem;">Numero menor aparece primeiro no site.</small>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Salvar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== TOPPING MODAL ========== -->
+  <div class="modal-overlay" id="toppingModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="toppingModalTitle">Nova Cobertura</h3>
+        <button class="modal-close" id="toppingModalClose" aria-label="Fechar">&times;</button>
+      </div>
+      <form class="admin-form" id="toppingForm">
+        <input type="hidden" id="toppingEditId">
+        <div class="form-group">
+          <label for="toppingName">Nome</label>
+          <input type="text" id="toppingName" placeholder="Ex: Calda de Chocolate" required>
+        </div>
+        <div class="form-group">
+          <label for="toppingPrice">Preco (R$)</label>
+          <input type="number" id="toppingPrice" step="0.01" min="0" placeholder="0.00" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Salvar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== BOX MODAL ========== -->
+  <div class="modal-overlay" id="boxModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="boxModalTitle">Nova Caixa</h3>
+        <button class="modal-close" id="boxModalClose" aria-label="Fechar">&times;</button>
+      </div>
+      <form class="admin-form" id="boxForm">
+        <input type="hidden" id="boxEditId">
+        <div class="form-group">
+          <label for="boxName">Nome</label>
+          <input type="text" id="boxName" placeholder="Ex: Caixa Grande" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="boxUnits">Unidades</label>
+            <input type="number" id="boxUnits" min="1" placeholder="6" required>
+          </div>
+          <div class="form-group">
+            <label for="boxPrice">Preco (R$)</label>
+            <input type="number" id="boxPrice" step="0.01" min="0" placeholder="0.00" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Salvar</button>
+      </form>
+    </div>
+  </div>
+
   <!-- ========== DELETE CONFIRM MODAL ========== -->
   <div class="modal-overlay" id="deleteModal">
     <div class="modal" style="max-width:400px; text-align:center;">
@@ -312,15 +476,12 @@
   <!-- Toast -->
   <div class="toast toast-success" id="toast"></div>
 
-  <!-- ========== FIREBASE SDK ========== -->
-  <!-- DESCOMENTE as 3 linhas abaixo para ativar o Firebase -->
- <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script> 
- <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script> 
- <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script> 
+  <!-- ========== SUPABASE SDK ========== -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Scripts -->
   <script src="js/data.js"></script>
-  <script src="js/firebase-config.js"></script>
+  <script src="js/supabase-config.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/admin.js"></script>
 
