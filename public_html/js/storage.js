@@ -40,13 +40,18 @@ function invalidateCache(key) {
 async function initData() {
   try {
     // Pre-carregar dados em cache para evitar delay na UI
-    await Promise.all([
+    const [gelatos, chocolates, diversos, gelatoCats, chocoCats] = await Promise.all([
       getProducts('gelato'),
       getProducts('chocolate'),
       getProducts('diversos'),
       getCategories('gelato'),
       getCategories('chocolate'),
     ]);
+    console.log('[v0] Gelatos carregados:', gelatos.length, gelatos);
+    console.log('[v0] Chocolates carregados:', chocolates.length, chocolates);
+    console.log('[v0] Diversos carregados:', diversos.length, diversos);
+    console.log('[v0] Categorias gelato:', gelatoCats.length, gelatoCats);
+    console.log('[v0] Categorias chocolate:', chocoCats.length, chocoCats);
     console.log('Dados carregados do Supabase com sucesso!');
   } catch (err) {
     console.error('Erro ao carregar dados do Supabase:', err);
@@ -59,7 +64,7 @@ async function initData() {
 
 async function getProducts(type) {
   try {
-    const { data, error } = await supabaseClientClient
+    const { data, error } = await supabaseClient
       .from('products')
       .select('*')
       .eq('type', type)
@@ -77,7 +82,7 @@ async function getProducts(type) {
 
 async function getProductsByCategory(type, categoryId) {
   try {
-    let query = supabase
+    let query = supabaseClient
       .from('products')
       .select('*')
       .eq('type', type)
@@ -325,11 +330,11 @@ async function getChocolateBoxes() {
 
 function mapProductFromDB(row) {
   return {
-    id: row.id,
+    id: String(row.id),
     name: row.name,
     description: row.description,
-    price: row.price,
-    category: row.category,
+    price: Number(row.price),
+    category: row.category ? String(row.category) : null,
     type: row.type,
     imageUrl: row.image_url || '',
   };
@@ -337,7 +342,7 @@ function mapProductFromDB(row) {
 
 function mapCategoryFromDB(row) {
   return {
-    id: row.id,
+    id: String(row.id),
     name: row.name,
     type: row.type,
   };

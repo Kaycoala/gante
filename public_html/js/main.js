@@ -152,7 +152,8 @@ async function renderChocolateCards(filter) {
 
 // ---- Shared Product Card Template ----
 function createProductCard(product, category) {
-  const isLimited = product.category === 'limitada' || product.category === 'sazonais';
+  const catName = category ? category.name.toLowerCase() : '';
+  const isLimited = catName.includes('limitada') || catName.includes('sazonais') || catName.includes('sazonal');
   const hasImage = product.imageUrl && product.imageUrl.length > 0;
   const initial = product.name.charAt(0).toUpperCase();
 
@@ -573,7 +574,7 @@ async function addChocolateToOrder() {
   let itemPrice = 0;
 
   for (const [id, qty] of Object.entries(orderState.selectedChocos)) {
-    const c = chocolates.find(p => p.id === id);
+    const c = chocolates.find(p => String(p.id) === String(id));
     const name = c ? c.name : id;
     const unitPrice = c ? c.price : 0;
     itemPrice += unitPrice * qty;
@@ -610,7 +611,7 @@ async function addDiversosToOrder() {
   let itemPrice = 0;
 
   for (const [id, qty] of Object.entries(orderState.selectedDiversos)) {
-    const d = diversos.find(p => p.id === id);
+    const d = diversos.find(p => String(p.id) === String(id));
     const name = d ? d.name : id;
     const unitPrice = d ? d.price : 0;
     itemPrice += unitPrice * qty;
