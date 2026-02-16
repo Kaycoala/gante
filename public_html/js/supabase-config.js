@@ -22,7 +22,25 @@
 const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
 const SUPABASE_ANON_KEY = 'SUA-ANON-KEY-AQUI';
 
-// Inicializar o client Supabase (usando o SDK global carregado via CDN)
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Detecta se o Supabase foi configurado
+const SUPABASE_CONFIGURED = (
+  SUPABASE_URL !== 'https://SEU-PROJETO.supabase.co' &&
+  SUPABASE_ANON_KEY !== 'SUA-ANON-KEY-AQUI' &&
+  SUPABASE_URL.length > 10 &&
+  SUPABASE_ANON_KEY.length > 10
+);
 
-console.log('Supabase inicializado com sucesso!');
+// Inicializar o client Supabase (somente se configurado)
+let supabase = null;
+
+if (SUPABASE_CONFIGURED && window.supabase) {
+  try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('Supabase inicializado com sucesso!');
+  } catch (err) {
+    console.warn('Erro ao inicializar Supabase:', err);
+    supabase = null;
+  }
+} else {
+  console.log('Supabase nao configurado. Usando dados locais (data.js).');
+}
