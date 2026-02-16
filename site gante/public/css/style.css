@@ -663,8 +663,6 @@ p {
   background: var(--color-warm-white);
   border-radius: var(--radius-lg);
   padding: 24px;
-  position: sticky;
-  top: calc(var(--nav-height) + 20px);
 }
 
 .order-summary-panel h3 {
@@ -679,8 +677,6 @@ p {
   flex-direction: column;
   gap: 12px;
   margin-bottom: 20px;
-  max-height: 400px;
-  overflow-y: auto;
 }
 
 .order-item {
@@ -1688,12 +1684,13 @@ p {
   }
 
   .order-layout {
-    flex-direction: row;
+    flex-direction: column;
   }
 
   .order-summary-panel {
-    width: 320px;
-    flex-shrink: 0;
+    width: 100%;
+    position: relative;
+    top: auto;
   }
 
   .flavor-grid {
