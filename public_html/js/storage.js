@@ -59,7 +59,7 @@ async function initData() {
 
 async function getProducts(type) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClientClient
       .from('products')
       .select('*')
       .eq('type', type)
@@ -99,7 +99,7 @@ async function getProductsByCategory(type, categoryId) {
 
 async function getProductById(type, id) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('products')
       .select('*')
       .eq('id', id)
@@ -124,7 +124,7 @@ async function addProduct(type, product) {
       image_url: product.imageUrl || '',
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('products')
       .insert(dbProduct)
       .select()
@@ -149,7 +149,7 @@ async function updateProduct(type, id, updates) {
     if (updates.type !== undefined) dbUpdates.type = updates.type;
     if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('products')
       .update(dbUpdates)
       .eq('id', id)
@@ -167,7 +167,7 @@ async function updateProduct(type, id, updates) {
 
 async function deleteProduct(type, id) {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('products')
       .delete()
       .eq('id', id);
@@ -185,7 +185,7 @@ async function deleteProduct(type, id) {
 
 async function getCategories(type) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('categories')
       .select('*')
       .eq('type', type)
@@ -206,7 +206,7 @@ async function addCategory(type, category) {
       type: type,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('categories')
       .insert(dbCategory)
       .select()
@@ -223,7 +223,7 @@ async function addCategory(type, category) {
 
 async function updateCategory(type, id, updates) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('categories')
       .update({ name: updates.name })
       .eq('id', id)
@@ -241,7 +241,7 @@ async function updateCategory(type, id, updates) {
 
 async function deleteCategory(type, id) {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('categories')
       .delete()
       .eq('id', id);
@@ -261,7 +261,7 @@ async function getGelatoSizes() {
   try {
     if (_cache.gelatoSizes) return _cache.gelatoSizes;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('gelato_sizes')
       .select('*')
       .order('price', { ascending: true });
@@ -283,7 +283,7 @@ async function getToppings() {
   try {
     if (_cache.toppings) return _cache.toppings;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('toppings')
       .select('*')
       .order('name', { ascending: true });
@@ -305,7 +305,7 @@ async function getChocolateBoxes() {
   try {
     if (_cache.chocolateBoxes) return _cache.chocolateBoxes;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('chocolate_boxes')
       .select('*')
       .order('units', { ascending: true });
@@ -354,7 +354,7 @@ function mapCategoryFromDB(row) {
 //   const ext = file.name.split('.').pop();
 //   const path = `${type}/${productId}_${Date.now()}.${ext}`;
 //
-//   const { data, error } = await supabase.storage
+//   const { data, error } = await supabaseClient.storage
 //     .from('product-images')
 //     .upload(path, file, { cacheControl: '3600', upsert: false });
 //
@@ -376,7 +376,7 @@ function mapCategoryFromDB(row) {
 //     if (pathParts.length < 2) return;
 //     const filePath = pathParts[1];
 //
-//     await supabase.storage
+//     await supabaseClient.storage
 //       .from('product-images')
 //       .remove([filePath]);
 //   } catch (e) {

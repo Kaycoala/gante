@@ -24,9 +24,20 @@ const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
 const SUPABASE_ANON_KEY = 'SUA-CHAVE-ANON-PUBLICA';
 
 // Inicializar cliente Supabase
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// O CDN cria window.supabase como a biblioteca. Usamos um nome diferente
+// para o cliente para evitar conflito com o objeto global da biblioteca.
+let supabaseClient = null;
 
-// Flag para indicar que Supabase esta ativo
-window.SUPABASE_ENABLED = true;
-
-console.log('Supabase inicializado com sucesso!');
+try {
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window.SUPABASE_ENABLED = true;
+    console.log('Supabase inicializado com sucesso!');
+  } else {
+    console.error('Supabase SDK nao encontrado. Verifique se o script do CDN foi carregado.');
+    window.SUPABASE_ENABLED = false;
+  }
+} catch (e) {
+  console.error('Erro ao inicializar Supabase:', e);
+  window.SUPABASE_ENABLED = false;
+}
