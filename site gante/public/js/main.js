@@ -201,7 +201,7 @@ let orderState = {
   items: [],
   // Gelato state
   gelatoSize: null,
-  selectedFlavors: [],
+  selectedFlavors: {}, // { flavorId: quantity }
   selectedToppings: [],
   gelatoQty: 1,
   // Chocolate state
@@ -255,13 +255,13 @@ function renderGelatoSizes() {
       container.querySelectorAll('.size-option').forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
       orderState.gelatoSize = GELATO_SIZES.find(s => s.id === opt.dataset.size);
-      orderState.selectedFlavors = [];
+      orderState.selectedFlavors = {};
       updateFlavorSelection();
     });
   });
 }
 
-// Gelato Flavors
+// Gelato Flavors (com quantidade por sabor)
 function renderGelatoFlavors() {
   const container = document.getElementById('gelatoFlavors');
   const gelatos = getProducts('gelato');
@@ -270,28 +270,44 @@ function renderGelatoFlavors() {
     const hasImg = g.imageUrl && g.imageUrl.length > 0;
     const hue = hashStringToHue(g.name);
     return `
-      <div class="flavor-item" data-id="${g.id}">
-        <div class="flavor-check"></div>
-        ${hasImg
-          ? `<img class="flavor-thumb" src="${g.imageUrl}" alt="${g.name}">`
-          : `<span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>`
-        }
-        <span>${g.name}</span>
+      <div class="choco-choice-item" data-id="${g.id}">
+        <div class="choco-choice-info">
+          ${hasImg
+            ? `<img class="flavor-thumb" src="${g.imageUrl}" alt="${g.name}">`
+            : `<span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>`
+          }
+          <span class="choco-choice-name">${g.name}</span>
+        </div>
+        <div class="choco-qty-control">
+          <button type="button" class="choco-qty-btn flavor-qty-minus" data-id="${g.id}">-</button>
+          <span class="choco-qty-value flavor-qty-value" data-id="${g.id}">0</span>
+          <button type="button" class="choco-qty-btn flavor-qty-plus" data-id="${g.id}">+</button>
+        </div>
       </div>
     `;
   }).join('');
 
-  container.querySelectorAll('.flavor-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const id = item.dataset.id;
-      if (item.classList.contains('disabled')) return;
+  // Bind + buttons
+  container.querySelectorAll('.flavor-qty-plus').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const totalSelected = getFlavorTotalCount();
+      const maxBalls = orderState.gelatoSize ? orderState.gelatoSize.balls : 1;
+      if (totalSelected >= maxBalls) return;
+      orderState.selectedFlavors[id] = (orderState.selectedFlavors[id] || 0) + 1;
+      updateFlavorSelection();
+    });
+  });
 
-      if (orderState.selectedFlavors.includes(id)) {
-        orderState.selectedFlavors = orderState.selectedFlavors.filter(f => f !== id);
-      } else {
-        if (orderState.gelatoSize && orderState.selectedFlavors.length >= orderState.gelatoSize.balls) return;
-        orderState.selectedFlavors.push(id);
-      }
+  // Bind - buttons
+  container.querySelectorAll('.flavor-qty-minus').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (!orderState.selectedFlavors[id] || orderState.selectedFlavors[id] <= 0) return;
+      orderState.selectedFlavors[id] -= 1;
+      if (orderState.selectedFlavors[id] === 0) delete orderState.selectedFlavors[id];
       updateFlavorSelection();
     });
   });
@@ -299,17 +315,32 @@ function renderGelatoFlavors() {
   updateFlavorSelection();
 }
 
+function getFlavorTotalCount() {
+  return Object.values(orderState.selectedFlavors).reduce((sum, qty) => sum + qty, 0);
+}
+
 function updateFlavorSelection() {
   const container = document.getElementById('gelatoFlavors');
   const maxFlavors = orderState.gelatoSize ? orderState.gelatoSize.balls : 1;
+  const totalSelected = getFlavorTotalCount();
   const countEl = document.getElementById('flavorCount');
-  countEl.textContent = `(${orderState.selectedFlavors.length}/${maxFlavors})`;
+  countEl.textContent = `(${totalSelected}/${maxFlavors})`;
+  const isFull = totalSelected >= maxFlavors;
 
-  container.querySelectorAll('.flavor-item').forEach(item => {
+  container.querySelectorAll('.choco-choice-item').forEach(item => {
     const id = item.dataset.id;
-    const isSelected = orderState.selectedFlavors.includes(id);
-    item.classList.toggle('selected', isSelected);
-    item.classList.toggle('disabled', !isSelected && orderState.selectedFlavors.length >= maxFlavors);
+    const qty = orderState.selectedFlavors[id] || 0;
+    const qtyDisplay = item.querySelector('.flavor-qty-value[data-id="' + id + '"]');
+    if (qtyDisplay) qtyDisplay.textContent = qty;
+
+    item.classList.toggle('selected', qty > 0);
+
+    // Desabilitar botao + se slots estao cheios
+    const plusBtn = item.querySelector('.flavor-qty-plus');
+    if (plusBtn) {
+      plusBtn.disabled = isFull;
+      plusBtn.classList.toggle('disabled', isFull);
+    }
   });
 }
 
@@ -480,16 +511,23 @@ function addGelatoToOrder() {
     showToast('Selecione um tamanho.', 'error');
     return;
   }
-  if (orderState.selectedFlavors.length === 0) {
+  const totalSelected = getFlavorTotalCount();
+  if (totalSelected === 0) {
     showToast('Selecione pelo menos um sabor.', 'error');
+    return;
+  }
+  if (totalSelected !== orderState.gelatoSize.balls) {
+    showToast(`Selecione exatamente ${orderState.gelatoSize.balls} bola${orderState.gelatoSize.balls > 1 ? 's' : ''} para este tamanho. Voce selecionou ${totalSelected}.`, 'error');
     return;
   }
 
   const gelatos = getProducts('gelato');
-  const flavorNames = orderState.selectedFlavors.map(id => {
+  const flavorDescParts = [];
+  for (const [id, qty] of Object.entries(orderState.selectedFlavors)) {
     const g = gelatos.find(p => p.id === id);
-    return g ? g.name : id;
-  });
+    const name = g ? g.name : id;
+    flavorDescParts.push(qty > 1 ? `${name} (x${qty})` : name);
+  }
 
   const toppingNames = orderState.selectedToppings.map(id => {
     const t = TOPPINGS.find(tp => tp.id === id);
@@ -507,15 +545,15 @@ function addGelatoToOrder() {
     id: 'oi' + Date.now(),
     type: 'gelato',
     size: orderState.gelatoSize.name,
-    flavors: flavorNames,
+    flavors: flavorDescParts,
     toppings: toppingNames,
     qty: orderState.gelatoQty,
     price: itemPrice,
-    description: `Gelato ${orderState.gelatoSize.name} - ${flavorNames.join(', ')}${toppingNames.length > 0 ? ' + ' + toppingNames.join(', ') : ''} (x${orderState.gelatoQty})`
+    description: `Gelato ${orderState.gelatoSize.name} - ${flavorDescParts.join(', ')}${toppingNames.length > 0 ? ' + ' + toppingNames.join(', ') : ''} (x${orderState.gelatoQty})`
   });
 
   // Reset gelato selections
-  orderState.selectedFlavors = [];
+  orderState.selectedFlavors = {};
   orderState.selectedToppings = [];
   orderState.gelatoQty = 1;
   document.getElementById('gelatoQty').value = 1;
@@ -722,9 +760,9 @@ function sendToWhatsApp() {
 
 function resetOrder() {
   orderState.items = [];
-  orderState.selectedFlavors = [];
+  orderState.selectedFlavors = {};
   orderState.selectedToppings = [];
-  orderState.selectedChocos = [];
+  orderState.selectedChocos = {};
   orderState.gelatoQty = 1;
   orderState.chocoQty = 1;
   document.getElementById('gelatoQty').value = 1;

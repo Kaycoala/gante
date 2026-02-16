@@ -679,21 +679,26 @@ p {
   flex-direction: column;
   gap: 12px;
   margin-bottom: 20px;
-  max-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
 .order-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 10px 0;
   border-bottom: 1px solid rgba(var(--color-cream-rgb), 0.5);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  gap: 8px;
 }
 
 .order-item-name {
   flex: 1;
+  min-width: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
 }
 
 .order-item-remove {
@@ -1715,6 +1720,90 @@ p {
 
   .section {
     padding: 56px 0;
+  }
+
+  /* Order builder mobile fixes */
+  .order-content {
+    padding: 20px 14px;
+  }
+
+  .order-builder {
+    border-radius: var(--radius-lg);
+  }
+
+  .size-selector {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .size-option {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    gap: 8px;
+  }
+
+  .size-option strong {
+    display: inline;
+    margin-bottom: 0;
+  }
+
+  .size-option small {
+    display: inline;
+  }
+
+  .size-option .size-price {
+    display: inline;
+    margin-top: 0;
+  }
+
+  .flavor-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .choco-choice-item {
+    padding: 10px 10px;
+    gap: 6px;
+  }
+
+  .choco-choice-name {
+    font-size: 0.82rem;
+  }
+
+  .choco-qty-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
+  }
+
+  .choco-qty-value {
+    width: 30px;
+    height: 28px;
+    font-size: 0.82rem;
+  }
+
+  .order-summary-panel {
+    padding: 18px 14px;
+  }
+
+  .order-items {
+    max-height: none;
+  }
+
+  .order-total {
+    font-size: 1.1rem;
+  }
+
+  .topping-grid {
+    gap: 6px;
+  }
+
+  .topping-item {
+    padding: 8px 14px;
+    font-size: 0.8rem;
   }
 
   .admin-sidebar {
