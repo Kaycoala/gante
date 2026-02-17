@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Gantê Gelato Artesanal & Chocolates - Autentico gelato italiano e chocolates finos artesanais feitos com ingredientes selecionados.">
   <meta name="theme-color" content="#0F3B2E">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Gantê | Gelato Artesanal & Chocolates</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍨</text></svg>">
@@ -325,11 +328,10 @@
         </div>
         <div>
           <h4>Categorias</h4>
-          <div class="footer-links">
-            <a href="#sabores">Classicos Italianos</a>
-            <a href="#sabores">Especiais da Casa</a>
-            <a href="#chocolates">Trufas & Bombons</a>
-            <a href="#chocolates">Barras Artesanais</a>
+          <div class="footer-links" id="footerCategories">
+            <a href="#sabores">Gelatos</a>
+            <a href="#chocolates">Chocolates</a>
+            <a href="#pedido">Diversos</a>
           </div>
         </div>
         <div>
@@ -362,10 +364,10 @@
   <!-- Toast -->
   <div class="toast toast-success" id="toast"></div>
 
-  <!-- Scripts -->
-  <script src="js/data.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/main.js"></script>
+  <!-- Scripts (cache bust: v2) -->
+  <script src="js/data.js?v=2"></script>
+  <script src="js/storage.js?v=2"></script>
+  <script src="js/main.js?v=2"></script>
 
 </body>
 </html>
