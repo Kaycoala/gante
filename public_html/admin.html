@@ -13,7 +13,7 @@
   <!-- ========== LOGIN ========== -->
   <div class="admin-login" id="adminLogin">
     <div class="admin-login-card">
-      <div class="nav-logo font-accent">Gante</div>
+      <div class="nav-logo"><img src="images/logo-gante.png" alt="Gantê" class="admin-login-logo-img"></div>
       <h2>Painel Administrativo</h2>
       <p>Digite a senha para acessar o painel de gerenciamento.</p>
       <div class="login-error" id="loginError">Senha incorreta. Tente novamente.</div>
@@ -41,7 +41,7 @@
     <!-- Sidebar -->
     <aside class="admin-sidebar" id="adminSidebar">
       <div class="admin-sidebar-logo">
-        <a href="index.html" class="nav-logo">Gante</a>
+        <a href="index.html" class="nav-logo"><img src="images/logo-gante.png" alt="Gantê" class="nav-logo-img"></a>
         <small>Painel Admin</small>
       </div>
       <nav class="admin-nav">
@@ -55,7 +55,7 @@
         </button>
         <button class="admin-nav-item" data-view="diversos">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-          Diversos
+          Cafeteria
         </button>
         <button class="admin-nav-item" data-view="categorias">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
@@ -143,14 +143,14 @@
       <!-- ---- DIVERSOS VIEW ---- -->
       <div class="admin-view" id="viewDiversos" style="display:none;">
         <div class="admin-header">
-          <h1>Diversos</h1>
+          <h1>Cafeteria</h1>
           <div class="admin-header-actions">
             <button class="btn btn-primary btn-sm" id="addDiversosBtn">+ Novo Item</button>
           </div>
         </div>
         <div class="admin-table-wrap">
           <div class="admin-table-header">
-            <input type="text" class="admin-table-search" id="diversosSearch" placeholder="Buscar diversos...">
+            <input type="text" class="admin-table-search" id="diversosSearch" placeholder="Buscar cafeteria...">
           </div>
           <table class="admin-table">
             <thead>
@@ -206,10 +206,10 @@
               <tbody id="chocoCatBody"></tbody>
             </table>
           </div>
-          <!-- Diversos Categories -->
+          <!-- Cafeteria Categories -->
           <div class="admin-table-wrap" style="flex:1; min-width:300px;">
             <div class="admin-table-header">
-              <strong>Categorias de Diversos</strong>
+              <strong>Categorias de Cafeteria</strong>
               <button class="btn btn-primary btn-sm" id="addDiversosCatBtn">+ Nova</button>
             </div>
             <table class="admin-table">
@@ -276,7 +276,7 @@
   <div class="modal-overlay" id="diversosModal">
     <div class="modal">
       <div class="modal-header">
-        <h3 id="diversosModalTitle">Novo Item Diverso</h3>
+        <h3 id="diversosModalTitle">Novo Item de Cafeteria</h3>
         <button class="modal-close" id="diversosModalClose" aria-label="Fechar">&times;</button>
       </div>
       <form class="admin-form" id="diversosForm">

@@ -248,10 +248,36 @@ p {
   font-size: 2.2rem;
   color: var(--color-gold);
   transition: opacity var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
 }
 
 .nav-logo:hover {
   opacity: 0.85;
+}
+
+/* Logo image inside nav-logo */
+.nav-logo-img {
+  height: 40px;
+  width: auto;
+  display: block;
+}
+
+/* Hero logo image */
+.hero-logo-img {
+  height: clamp(60px, 12vw, 110px);
+  width: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Admin login logo image */
+.admin-login-logo-img {
+  height: 52px;
+  width: auto;
+  display: block;
+  margin: 0 auto;
+  filter: brightness(0) saturate(100%) invert(18%) sepia(24%) saturate(1185%) hue-rotate(118deg) brightness(97%) contrast(94%);
 }
 
 .nav-links {
@@ -1558,6 +1584,7 @@ p {
   font-size: 2.5rem;
   color: var(--color-primary);
   margin-bottom: 8px;
+  display: block;
 }
 
 .admin-login-card h2 {
@@ -1618,6 +1645,10 @@ p {
 
 .admin-sidebar-logo .nav-logo {
   font-size: 2rem;
+}
+
+.admin-sidebar-logo .nav-logo-img {
+  height: 36px;
 }
 
 .admin-sidebar-logo small {
@@ -1871,6 +1902,16 @@ p {
   }
 
   /* Order builder mobile fixes */
+  .order-tabs {
+    gap: 0;
+  }
+
+  .order-tab {
+    padding: 14px 8px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
   .order-content {
     padding: 20px 14px;
   }
@@ -1907,9 +1948,34 @@ p {
     margin-top: 0;
   }
 
+  .filter-bar {
+    gap: 6px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-btn {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
   .flavor-grid {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+
+  .diversos-category-label {
+    font-size: 0.88rem;
+    padding: 6px 0 2px;
   }
 
   .choco-choice-item {
@@ -1917,8 +1983,17 @@ p {
     gap: 6px;
   }
 
+  .choco-choice-info {
+    gap: 8px;
+    min-width: 0;
+  }
+
   .choco-choice-name {
     font-size: 0.82rem;
+  }
+
+  .choco-choice-price {
+    font-size: 0.72rem;
   }
 
   .choco-qty-btn {
@@ -1931,6 +2006,14 @@ p {
     width: 30px;
     height: 28px;
     font-size: 0.82rem;
+  }
+
+  .nav-logo-img {
+    height: 32px;
+  }
+
+  .hero-logo-img {
+    height: clamp(50px, 14vw, 80px);
   }
 
   /* Historia mobile */

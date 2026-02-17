@@ -600,7 +600,7 @@ async function addDiversosToOrder() {
   orderState.items.push({
     id: 'oi' + Date.now(),
     type: 'diversos',
-    description: `Diversos - ${descParts.join(', ')}`,
+    description: `Cafeteria - ${descParts.join(', ')}`,
     qty: totalSelected,
     price: itemPrice,
   });
@@ -610,7 +610,7 @@ async function addDiversosToOrder() {
   updateDiversosSelection();
 
   updateOrderSummary();
-  showToast('Itens diversos adicionados ao pedido!', 'success');
+  showToast('Itens da cafeteria adicionados ao pedido!', 'success');
 }
 
 // Update Order Summary (single panel)

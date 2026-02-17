@@ -4,6 +4,7 @@
 
 const ADMIN_PASSWORD = 'gante2024';
 let pendingDelete = null;
+let _dashboardInitialized = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
   await initData();
@@ -52,21 +53,27 @@ function logout() {
 
 // ---- Dashboard Init ----
 async function initDashboard() {
-  initSidebarNav();
-  initMobileSidebar();
-  await renderGelatoTable();
-  await renderChocolateTable();
-  await renderDiversosTable();
-  await renderCategoryTables();
-  await renderFlavorsOfDay();
-  initProductModal();
-  initDiversosModal();
-  initCategoryModal();
-  initDeleteModal();
-  initSearch();
-  initAddButtons();
-  initImageUpload();
-  initFlavorsOfDayBtn();
+  // Only bind event listeners once to prevent duplicate handlers
+  if (!_dashboardInitialized) {
+    initSidebarNav();
+    initMobileSidebar();
+    initProductModal();
+    initDiversosModal();
+    initCategoryModal();
+    initDeleteModal();
+    initSearch();
+    initAddButtons();
+    initImageUpload();
+    initFlavorsOfDayBtn();
+    _dashboardInitialized = true;
+  }
+
+  // Data rendering can be called multiple times safely
+  try { await renderGelatoTable(); } catch (e) { console.error('[v0] renderGelatoTable error:', e); }
+  try { await renderChocolateTable(); } catch (e) { console.error('[v0] renderChocolateTable error:', e); }
+  try { await renderDiversosTable(); } catch (e) { console.error('[v0] renderDiversosTable error:', e); }
+  try { await renderCategoryTables(); } catch (e) { console.error('[v0] renderCategoryTables error:', e); }
+  try { await renderFlavorsOfDay(); } catch (e) { console.error('[v0] renderFlavorsOfDay error:', e); }
 }
 
 // ---- Sidebar Navigation ----
@@ -261,7 +268,7 @@ async function renderDiversosTable(search = '') {
   }).join('');
 
   if (products.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:32px; color:rgba(15,59,46,0.4);">Nenhum item diverso encontrado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:32px; color:rgba(15,59,46,0.4);">Nenhum item de cafeteria encontrado.</td></tr>';
   }
 }
 
@@ -461,7 +468,7 @@ function initDiversosModal() {
     if (editId) {
       result = await updateProduct('diversos', editId, productData);
       if (result) {
-        showToast('Item diverso atualizado com sucesso!');
+        showToast('Item de cafeteria atualizado com sucesso!');
       } else {
         showToast('ERRO: Nao foi possivel atualizar o item. Verifique a conexao com o banco.', 'error');
         return;
@@ -469,7 +476,7 @@ function initDiversosModal() {
     } else {
       result = await addProduct('diversos', productData);
       if (result) {
-        showToast('Item diverso adicionado com sucesso!');
+        showToast('Item de cafeteria adicionado com sucesso!');
       } else {
         showToast('ERRO: Nao foi possivel adicionar o item. Verifique a conexao com o banco.', 'error');
         return;
@@ -495,7 +502,7 @@ async function openDiversosModal(productId = null) {
   if (productId) {
     const product = await getProductById('diversos', productId);
     if (!product) return;
-    title.textContent = 'Editar Item Diverso';
+    title.textContent = 'Editar Item de Cafeteria';
     document.getElementById('divEditId').value = product.id;
     document.getElementById('divName').value = product.name;
     document.getElementById('divDescription').value = product.description;
@@ -508,7 +515,7 @@ async function openDiversosModal(productId = null) {
       document.getElementById('divImageFile').value = '';
     }
   } else {
-    title.textContent = 'Novo Item Diverso';
+    title.textContent = 'Novo Item de Cafeteria';
     document.getElementById('divEditId').value = '';
     form.reset();
   }
@@ -569,7 +576,7 @@ async function openCategoryModal(type, catId = null) {
     document.getElementById('catEditId').value = cat.id;
     document.getElementById('catName').value = cat.name;
   } else {
-    title.textContent = 'Nova Categoria (' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : 'Diversos') + ')';
+    title.textContent = 'Nova Categoria (' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : 'Cafeteria') + ')';
     document.getElementById('catEditId').value = '';
     document.getElementById('catName').value = '';
   }
