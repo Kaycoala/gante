@@ -706,8 +706,36 @@ function openOrderModal() {
     </div>
 
     <div class="form-group">
-      <label for="customerName">Seu Nome</label>
+      <label for="customerName">Seu Nome *</label>
       <input type="text" id="customerName" placeholder="Digite seu nome" required>
+    </div>
+
+    <div class="form-group">
+      <label for="customerPhone">Seu Telefone *</label>
+      <input type="tel" id="customerPhone" placeholder="(00) 00000-0000" required>
+    </div>
+
+    <div class="form-group">
+      <label>Forma de Recebimento *</label>
+      <div style="display:flex; gap:12px; margin-top:6px;">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.95rem; font-weight:500; color:var(--color-primary);">
+          <input type="radio" name="deliveryOption" value="retirada" checked style="accent-color:var(--color-primary); width:18px; height:18px;">
+          Retirar na loja
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.95rem; font-weight:500; color:var(--color-primary);">
+          <input type="radio" name="deliveryOption" value="entrega" style="accent-color:var(--color-primary); width:18px; height:18px;">
+          Entrega (+R$ 7,00)
+        </label>
+      </div>
+    </div>
+
+    <div class="form-group" id="deliveryAddressGroup" style="display:none;">
+      <label for="deliveryAddress">Endereco de Entrega *</label>
+      <input type="text" id="deliveryAddress" placeholder="Rua, numero, bairro">
+    </div>
+
+    <div id="deliveryFeeInfo" style="display:none; background:rgba(232,217,197,0.3); border-radius:8px; padding:10px 14px; margin-bottom:16px; font-size:0.9rem; color:var(--color-primary);">
+      Taxa de entrega: <strong>R$ 7,00</strong>
     </div>
 
     <button class="btn btn-whatsapp" style="width:100%;" onclick="sendToWhatsApp()">
@@ -718,6 +746,27 @@ function openOrderModal() {
       Voce sera redirecionado para o WhatsApp com o resumo do pedido.
     </p>
   `;
+
+  // Bind delivery option toggle
+  document.querySelectorAll('input[name="deliveryOption"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const isDelivery = radio.value === 'entrega' && radio.checked;
+      document.getElementById('deliveryAddressGroup').style.display = isDelivery ? 'block' : 'none';
+      document.getElementById('deliveryFeeInfo').style.display = isDelivery ? 'block' : 'none';
+    });
+  });
+
+  // Mascara simples de telefone
+  const phoneInput = document.getElementById('customerPhone');
+  phoneInput.addEventListener('input', () => {
+    let v = phoneInput.value.replace(/\D/g, '').substring(0, 11);
+    if (v.length > 6) {
+      v = `(${v.substring(0,2)}) ${v.substring(2,7)}-${v.substring(7)}`;
+    } else if (v.length > 2) {
+      v = `(${v.substring(0,2)}) ${v.substring(2)}`;
+    }
+    phoneInput.value = v;
+  });
 
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -730,19 +779,55 @@ function closeOrderModal() {
 
 function sendToWhatsApp() {
   const nameInput = document.getElementById('customerName');
+  const phoneInput = document.getElementById('customerPhone');
   const name = nameInput ? nameInput.value.trim() : '';
+  const phone = phoneInput ? phoneInput.value.trim() : '';
+  const deliveryOption = document.querySelector('input[name="deliveryOption"]:checked');
+  const isDelivery = deliveryOption && deliveryOption.value === 'entrega';
+  const addressInput = document.getElementById('deliveryAddress');
+  const address = addressInput ? addressInput.value.trim() : '';
+
+  // Validacoes
+  let hasError = false;
 
   if (!name) {
     nameInput.style.borderColor = 'var(--color-error)';
-    nameInput.focus();
-    return;
+    if (!hasError) nameInput.focus();
+    hasError = true;
+  } else {
+    nameInput.style.borderColor = '';
   }
 
-  const total = orderState.items.reduce((sum, item) => sum + item.price, 0);
+  if (!phone || phone.replace(/\D/g, '').length < 10) {
+    phoneInput.style.borderColor = 'var(--color-error)';
+    if (!hasError) phoneInput.focus();
+    hasError = true;
+  } else {
+    phoneInput.style.borderColor = '';
+  }
+
+  if (isDelivery && !address) {
+    addressInput.style.borderColor = 'var(--color-error)';
+    if (!hasError) addressInput.focus();
+    hasError = true;
+  } else if (addressInput) {
+    addressInput.style.borderColor = '';
+  }
+
+  if (hasError) return;
+
+  const deliveryFee = isDelivery ? 7 : 0;
+  const subtotal = orderState.items.reduce((sum, item) => sum + item.price, 0);
+  const total = subtotal + deliveryFee;
 
   // Montar mensagem para WhatsApp
   let message = `*Pedido Gante Gelato & Chocolates*\n\n`;
   message += `*Cliente:* ${name}\n`;
+  message += `*Telefone:* ${phone}\n`;
+  message += `*Recebimento:* ${isDelivery ? 'Entrega' : 'Retirada na loja'}\n`;
+  if (isDelivery) {
+    message += `*Endereco:* ${address}\n`;
+  }
   message += `-----------------------------------\n\n`;
 
   orderState.items.forEach((item, index) => {
@@ -751,6 +836,10 @@ function sendToWhatsApp() {
   });
 
   message += `-----------------------------------\n`;
+  if (isDelivery) {
+    message += `Subtotal: ${formatPrice(subtotal)}\n`;
+    message += `Taxa de entrega: ${formatPrice(deliveryFee)}\n`;
+  }
   message += `*TOTAL: ${formatPrice(total)}*\n\n`;
   message += `Obrigado pela preferencia!`;
 
