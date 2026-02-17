@@ -1100,11 +1100,13 @@ p {
 
 .historia-image {
   flex: 1;
+  width: 100%;
   border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
-  min-height: 350px;
+  min-height: 250px;
   position: relative;
+  background: var(--color-cream);
 }
 
 .historia-image img {
@@ -1834,6 +1836,24 @@ p {
     width: 30px;
     height: 28px;
     font-size: 0.82rem;
+  }
+
+  /* Historia mobile */
+  .historia-layout {
+    gap: 28px;
+  }
+
+  .historia-image {
+    min-height: 220px;
+    width: 100%;
+  }
+
+  .historia-text h3 {
+    font-size: 1.3rem;
+  }
+
+  .historia-text p {
+    font-size: 0.92rem;
   }
 
   .order-summary-panel {
