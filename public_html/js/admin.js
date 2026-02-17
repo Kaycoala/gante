@@ -7,7 +7,6 @@ let _adminAuthenticated = false; // autenticacao in-memory (sem sessionStorage)
 let pendingDelete = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-  await initData();
   initLogin();
   checkAuth();
 });

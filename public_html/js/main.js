@@ -3,7 +3,6 @@
 // ============================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-  await initData();
   initNavbar();
   initMobileMenu();
   initScrollAnimations();

@@ -17,32 +17,6 @@ const SITE_BASE_URL = 'https://ganteartesanal.com.br';
 
 const API_BASE = '/api';
 
-// ---- Testar se a API PHP esta online (sem cache, sempre verifica) ----
-async function checkApiAvailability() {
-  try {
-    const resp = await fetch(`${API_BASE}/extras.php?table=gelato_sizes`, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
-    });
-
-    if (resp.ok) {
-      const text = await resp.text();
-      try {
-        const data = JSON.parse(text);
-        if (Array.isArray(data)) {
-          return true;
-        }
-      } catch (parseErr) {
-        // resposta nao-JSON
-      }
-    }
-
-    return false;
-  } catch (e) {
-    return false;
-  }
-}
-
 // ---- Helper para fetch com tratamento de erro ----
 async function apiFetch(url, options = {}) {
   const response = await fetch(url, {
@@ -68,61 +42,50 @@ async function apiFetch(url, options = {}) {
   return data;
 }
 
-// ---- Initialization ----
-async function initData() {
-  await checkApiAvailability();
-}
-
 // ============================================
 // PRODUCTS
 // ============================================
 
 async function getProducts(type) {
-  if (await checkApiAvailability()) {
-    try {
-      const data = await apiFetch(`${API_BASE}/products.php?type=${encodeURIComponent(type)}`);
-      return (data || []).map(mapProductFromDB);
-    } catch (err) {
-      console.error('[Gante] Erro API getProducts:', err);
-    }
+  try {
+    const data = await apiFetch(`${API_BASE}/products.php?type=${encodeURIComponent(type)}`);
+    return (data || []).map(mapProductFromDB);
+  } catch (err) {
+    console.error('[Gante] Erro API getProducts:', err);
+    return [];
   }
-  return [];
 }
 
 async function getProductsByCategory(type, categoryId) {
-  if (await checkApiAvailability()) {
-    try {
-      let url = `${API_BASE}/products.php?type=${encodeURIComponent(type)}`;
-      if (categoryId && categoryId !== 'todos') {
-        url += `&category=${encodeURIComponent(categoryId)}`;
-      }
-      const data = await apiFetch(url);
-      return (data || []).map(mapProductFromDB);
-    } catch (err) {
-      console.error('[Gante] Erro API getProductsByCategory:', err);
+  try {
+    let url = `${API_BASE}/products.php?type=${encodeURIComponent(type)}`;
+    if (categoryId && categoryId !== 'todos') {
+      url += `&category=${encodeURIComponent(categoryId)}`;
     }
+    const data = await apiFetch(url);
+    return (data || []).map(mapProductFromDB);
+  } catch (err) {
+    console.error('[Gante] Erro API getProductsByCategory:', err);
+    return [];
   }
-  return [];
 }
 
 async function getProductById(type, id) {
-  if (await checkApiAvailability()) {
-    try {
-      const data = await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`);
-      return data ? mapProductFromDB(data) : null;
-    } catch (err) {
-      console.error('[Gante] Erro API getProductById:', err);
-    }
+  try {
+    const data = await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`);
+    return data ? mapProductFromDB(data) : null;
+  } catch (err) {
+    console.error('[Gante] Erro API getProductById:', err);
+    return null;
   }
-  return null;
 }
 
 async function addProduct(type, product) {
   try {
     const body = {
       name: product.name,
-      description: product.description,
-      price: product.price,
+      description: product.description || '',
+      price: Number(product.price) || 0,
       category: product.category || null,
       type: type,
       image_url: product.imageUrl || '',
@@ -140,11 +103,11 @@ async function addProduct(type, product) {
 
 async function updateProduct(type, id, updates) {
   try {
-    const body = { id: id };
+    const body = { id: Number(id) };
     if (updates.name !== undefined) body.name = updates.name;
     if (updates.description !== undefined) body.description = updates.description;
-    if (updates.price !== undefined) body.price = updates.price;
-    if (updates.category !== undefined) body.category = updates.category;
+    if (updates.price !== undefined) body.price = Number(updates.price);
+    if (updates.category !== undefined) body.category = updates.category || null;
     if (updates.type !== undefined) body.type = updates.type;
     if (updates.imageUrl !== undefined) body.image_url = updates.imageUrl;
 
@@ -175,15 +138,13 @@ async function deleteProduct(type, id) {
 // ============================================
 
 async function getCategories(type) {
-  if (await checkApiAvailability()) {
-    try {
-      const data = await apiFetch(`${API_BASE}/categories.php?type=${encodeURIComponent(type)}`);
-      return (data || []).map(mapCategoryFromDB);
-    } catch (err) {
-      console.error('[Gante] Erro API getCategories:', err);
-    }
+  try {
+    const data = await apiFetch(`${API_BASE}/categories.php?type=${encodeURIComponent(type)}`);
+    return (data || []).map(mapCategoryFromDB);
+  } catch (err) {
+    console.error('[Gante] Erro API getCategories:', err);
+    return [];
   }
-  return [];
 }
 
 async function addCategory(type, category) {
@@ -202,7 +163,7 @@ async function addCategory(type, category) {
 
 async function updateCategory(type, id, updates) {
   try {
-    const body = { id: id, name: updates.name };
+    const body = { id: Number(id), name: updates.name };
     const data = await apiFetch(`${API_BASE}/categories.php`, {
       method: 'PUT',
       body: JSON.stringify(body),
@@ -230,15 +191,13 @@ async function deleteCategory(type, id) {
 // ============================================
 
 async function getGelatoSizes() {
-  if (await checkApiAvailability()) {
-    try {
-      const data = await apiFetch(`${API_BASE}/extras.php?table=gelato_sizes`);
-      return data || [];
-    } catch (err) {
-      console.error('[Gante] Erro API getGelatoSizes:', err);
-    }
+  try {
+    const data = await apiFetch(`${API_BASE}/extras.php?table=gelato_sizes`);
+    return data || [];
+  } catch (err) {
+    console.error('[Gante] Erro API getGelatoSizes:', err);
+    return [];
   }
-  return [];
 }
 
 // ============================================
@@ -246,15 +205,13 @@ async function getGelatoSizes() {
 // ============================================
 
 async function getToppings() {
-  if (await checkApiAvailability()) {
-    try {
-      const data = await apiFetch(`${API_BASE}/extras.php?table=toppings`);
-      return data || [];
-    } catch (err) {
-      console.error('[Gante] Erro API getToppings:', err);
-    }
+  try {
+    const data = await apiFetch(`${API_BASE}/extras.php?table=toppings`);
+    return data || [];
+  } catch (err) {
+    console.error('[Gante] Erro API getToppings:', err);
+    return [];
   }
-  return [];
 }
 
 // ============================================
@@ -262,20 +219,14 @@ async function getToppings() {
 // ============================================
 
 async function getChocolateBoxes() {
-  if (await checkApiAvailability()) {
-    try {
-      const data = await apiFetch(`${API_BASE}/extras.php?table=chocolate_boxes`);
-      return data || [];
-    } catch (err) {
-      console.error('[Gante] Erro API getChocolateBoxes:', err);
-    }
+  try {
+    const data = await apiFetch(`${API_BASE}/extras.php?table=chocolate_boxes`);
+    return data || [];
+  } catch (err) {
+    console.error('[Gante] Erro API getChocolateBoxes:', err);
+    return [];
   }
-  return [];
 }
-
-// ============================================
-// SEM FALLBACK: Sem banco = sem dados exibidos
-// ============================================
 
 // ============================================
 // MAPPERS (snake_case DB -> camelCase Frontend)
