@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initScrollAnimations();
   await renderGelatoSection();
   await renderChocolateSection();
+  await renderSoftSection();
   await initOrderBuilder();
   initContactForm();
 });
@@ -150,6 +151,39 @@ async function renderChocolateCards(filter) {
   }).join('');
 }
 
+// ---- Render Soft Section ----
+async function renderSoftSection() {
+  const filterBar = document.getElementById('softFilters');
+  const grid = document.getElementById('softGrid');
+  const categories = await getCategories('soft');
+
+  filterBar.innerHTML = `
+    <button class="filter-btn active" data-filter="todos">Todos</button>
+    ${categories.map(c => `<button class="filter-btn" data-filter="${c.id}">${c.name}</button>`).join('')}
+  `;
+
+  filterBar.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      await renderSoftCards(btn.dataset.filter);
+    });
+  });
+
+  await renderSoftCards('todos');
+}
+
+async function renderSoftCards(filter) {
+  const grid = document.getElementById('softGrid');
+  const products = await getProductsByCategory('soft', filter);
+  const categories = await getCategories('soft');
+
+  grid.innerHTML = products.map(p => {
+    const cat = categories.find(c => c.id === p.category);
+    return createProductCard(p, cat);
+  }).join('');
+}
+
 // ---- Shared Product Card Template ----
 function createProductCard(product, category) {
   const catName = category ? category.name.toLowerCase() : '';
@@ -205,6 +239,8 @@ let orderState = {
   gelatoQty: 1,
   // Chocolate state
   selectedChocos: {}, // { chocolateId: quantity }
+  // Soft state
+  selectedSoft: {}, // { softId: quantity }
   // Diversos state
   selectedDiversos: {}, // { diversoId: quantity }
 };
@@ -214,6 +250,7 @@ async function initOrderBuilder() {
   await renderGelatoSizes();
   await renderGelatoFlavorsToday();
   await renderChocolateChoices();
+  await renderSoftChoices();
   await renderDiversosChoices();
   initQtyControls();
   initAddButtonsMain();
@@ -227,6 +264,7 @@ function initOrderTabs() {
   const tabMap = {
     gelato: 'orderGelato',
     chocolate: 'orderChocolate',
+    soft: 'orderSoft',
     diversos: 'orderDiversos',
   };
 
@@ -403,6 +441,105 @@ function updateChocoSelection() {
   });
 }
 
+// Soft Choices (com quantidade por item - sem limite)
+async function renderSoftChoices() {
+  const container = document.getElementById('softChoices');
+  const softProducts = await getProducts('soft');
+  const categories = await getCategories('soft');
+
+  // Group by category
+  const grouped = {};
+  const uncategorized = [];
+
+  softProducts.forEach(s => {
+    if (s.category) {
+      if (!grouped[s.category]) grouped[s.category] = [];
+      grouped[s.category].push(s);
+    } else {
+      uncategorized.push(s);
+    }
+  });
+
+  let html = '';
+
+  categories.forEach(cat => {
+    const items = grouped[cat.id] || [];
+    if (items.length === 0) return;
+    html += `<div class="diversos-category-label">${cat.name}</div>`;
+    html += items.map(s => renderSoftItem(s)).join('');
+  });
+
+  if (uncategorized.length > 0) {
+    if (categories.length > 0 && Object.keys(grouped).length > 0) {
+      html += `<div class="diversos-category-label">Outros</div>`;
+    }
+    html += uncategorized.map(s => renderSoftItem(s)).join('');
+  }
+
+  container.innerHTML = html;
+  bindSoftQtyEvents(container);
+  updateSoftSelection();
+}
+
+function renderSoftItem(s) {
+  const hasImg = s.imageUrl && s.imageUrl.length > 0;
+  const hue = hashStringToHue(s.name);
+  return `
+    <div class="choco-choice-item" data-id="${s.id}">
+      <div class="choco-choice-info">
+        ${hasImg
+          ? `<img class="flavor-thumb" src="${s.imageUrl}" alt="${s.name}">`
+          : `<span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>`
+        }
+        <span class="choco-choice-name">${s.name}</span>
+        <span class="choco-choice-price">${formatPrice(s.price)}/un</span>
+      </div>
+      <div class="choco-qty-control">
+        <button type="button" class="choco-qty-btn soft-qty-minus" data-id="${s.id}">-</button>
+        <span class="choco-qty-value" data-id="${s.id}">0</span>
+        <button type="button" class="choco-qty-btn soft-qty-plus" data-id="${s.id}">+</button>
+      </div>
+    </div>
+  `;
+}
+
+function bindSoftQtyEvents(container) {
+  container.querySelectorAll('.soft-qty-plus').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      orderState.selectedSoft[id] = (orderState.selectedSoft[id] || 0) + 1;
+      updateSoftSelection();
+    });
+  });
+
+  container.querySelectorAll('.soft-qty-minus').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (!orderState.selectedSoft[id] || orderState.selectedSoft[id] <= 0) return;
+      orderState.selectedSoft[id] -= 1;
+      if (orderState.selectedSoft[id] === 0) delete orderState.selectedSoft[id];
+      updateSoftSelection();
+    });
+  });
+
+  updateSoftSelection();
+}
+
+function updateSoftSelection() {
+  const container = document.getElementById('softChoices');
+
+  container.querySelectorAll('.choco-choice-item').forEach(item => {
+    const id = item.dataset.id;
+    const qty = orderState.selectedSoft[id] || 0;
+    const qtyDisplay = item.querySelector('.choco-qty-value[data-id="' + id + '"]');
+    if (qtyDisplay) qtyDisplay.textContent = qty;
+
+    item.classList.toggle('selected', qty > 0);
+  });
+}
+
 // Diversos Choices (sem limite minimo/maximo, agrupados por categoria)
 async function renderDiversosChoices() {
   const container = document.getElementById('diversosChoices');
@@ -515,6 +652,7 @@ function initQtyControls() {
 function initAddButtonsMain() {
   document.getElementById('addGelatoBtn').addEventListener('click', addGelatoToOrder);
   document.getElementById('addChocolateBtn').addEventListener('click', addChocolateToOrder);
+  document.getElementById('addSoftOrderBtn').addEventListener('click', addSoftToOrder);
   document.getElementById('addDiversosBtn').addEventListener('click', addDiversosToOrder);
 }
 
@@ -575,6 +713,42 @@ async function addChocolateToOrder() {
 
   updateOrderSummary();
   showToast('Chocolates adicionados ao pedido!', 'success');
+}
+
+async function addSoftToOrder() {
+  const softProducts = await getProducts('soft');
+  const totalSelected = Object.values(orderState.selectedSoft).reduce((sum, qty) => sum + qty, 0);
+
+  if (totalSelected === 0) {
+    showToast('Selecione pelo menos um item da Linha Soft.', 'error');
+    return;
+  }
+
+  const descParts = [];
+  let itemPrice = 0;
+
+  for (const [id, qty] of Object.entries(orderState.selectedSoft)) {
+    const s = softProducts.find(p => String(p.id) === String(id));
+    const name = s ? s.name : id;
+    const unitPrice = s ? s.price : 0;
+    itemPrice += unitPrice * qty;
+    descParts.push(qty > 1 ? `${name} (x${qty})` : name);
+  }
+
+  orderState.items.push({
+    id: 'oi' + Date.now(),
+    type: 'soft',
+    description: `Linha Soft - ${descParts.join(', ')}`,
+    qty: totalSelected,
+    price: itemPrice,
+  });
+
+  // Reset
+  orderState.selectedSoft = {};
+  updateSoftSelection();
+
+  updateOrderSummary();
+  showToast('Itens da Linha Soft adicionados ao pedido!', 'success');
 }
 
 async function addDiversosToOrder() {
@@ -846,9 +1020,11 @@ function sendToWhatsApp() {
 function resetOrder() {
   orderState.items = [];
   orderState.selectedChocos = {};
+  orderState.selectedSoft = {};
   orderState.selectedDiversos = {};
   orderState.gelatoQty = 1;
   updateChocoSelection();
+  updateSoftSelection();
   updateDiversosSelection();
   updateOrderSummary();
 }

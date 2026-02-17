@@ -1783,6 +1783,15 @@ p {
   background: rgba(192, 57, 43, 0.2);
 }
 
+.btn-move {
+  background: rgba(41, 128, 185, 0.12);
+  color: #2980b9;
+}
+
+.btn-move:hover {
+  background: rgba(41, 128, 185, 0.22);
+}
+
 /* Admin Form Modal */
 .admin-form .form-row {
   display: flex;

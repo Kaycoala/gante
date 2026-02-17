@@ -56,6 +56,7 @@ async function initDashboard() {
   initMobileSidebar();
   await renderGelatoTable();
   await renderChocolateTable();
+  await renderSoftTable();
   await renderDiversosTable();
   await renderCategoryTables();
   await renderFlavorsOfDay();
@@ -63,6 +64,7 @@ async function initDashboard() {
   initDiversosModal();
   initCategoryModal();
   initDeleteModal();
+  initMoveProductModal();
   initSearch();
   initAddButtons();
   initImageUpload();
@@ -172,6 +174,7 @@ async function renderGelatoTable(search = '') {
         <td style="font-weight:600;">${formatPrice(p.price)}</td>
         <td class="actions">
           <button class="btn-edit" onclick="editProduct('gelato', '${p.id}')">Editar</button>
+          <button class="btn-move" onclick="openMoveProductModal('gelato', '${p.id}', '${p.name.replace(/'/g, "\\'")}')">Mover</button>
           <button class="btn-delete" onclick="requestDelete('product', 'gelato', '${p.id}', '${p.name}')">Excluir</button>
         </td>
       </tr>
@@ -213,6 +216,7 @@ async function renderChocolateTable(search = '') {
         <td style="font-weight:600;">${formatPrice(p.price)}</td>
         <td class="actions">
           <button class="btn-edit" onclick="editProduct('chocolate', '${p.id}')">Editar</button>
+          <button class="btn-move" onclick="openMoveProductModal('chocolate', '${p.id}', '${p.name.replace(/'/g, "\\'")}')">Mover</button>
           <button class="btn-delete" onclick="requestDelete('product', 'chocolate', '${p.id}', '${p.name}')">Excluir</button>
         </td>
       </tr>
@@ -254,6 +258,7 @@ async function renderDiversosTable(search = '') {
         <td style="font-weight:600;">${formatPrice(p.price)}</td>
         <td class="actions">
           <button class="btn-edit" onclick="editDiversos('${p.id}')">Editar</button>
+          <button class="btn-move" onclick="openMoveProductModal('diversos', '${p.id}', '${p.name.replace(/'/g, "\\'")}')">Mover</button>
           <button class="btn-delete" onclick="requestDelete('product', 'diversos', '${p.id}', '${p.name}')">Excluir</button>
         </td>
       </tr>
@@ -269,10 +274,53 @@ function editDiversos(id) {
   openDiversosModal(id);
 }
 
+// ---- Soft Table ----
+async function renderSoftTable(search = '') {
+  const tbody = document.getElementById('softTableBody');
+  let products = await getProducts('soft');
+  const categories = await getCategories('soft');
+
+  if (search) {
+    const s = search.toLowerCase();
+    products = products.filter(p => p.name.toLowerCase().includes(s) || p.description.toLowerCase().includes(s));
+  }
+
+  tbody.innerHTML = products.map(p => {
+    const cat = categories.find(c => c.id === p.category);
+    const hasImg = p.imageUrl && p.imageUrl.length > 0;
+    const hue = hashStringToHue(p.name);
+    return `
+      <tr>
+        <td>
+          <div style="display:flex; align-items:center; gap:10px;">
+            ${hasImg
+              ? `<img class="admin-product-thumb" src="${p.imageUrl}" alt="${p.name}">`
+              : `<span class="admin-product-thumb-placeholder" style="background:hsl(${hue}, 25%, 78%)">${p.name.charAt(0)}</span>`
+            }
+            <strong>${p.name}</strong>
+          </div>
+        </td>
+        <td><span class="category-pill">${cat ? cat.name : (p.category ? p.category : 'Sem categoria')}</span></td>
+        <td style="font-weight:600;">${formatPrice(p.price)}</td>
+        <td class="actions">
+          <button class="btn-edit" onclick="editProduct('soft', '${p.id}')">Editar</button>
+          <button class="btn-move" onclick="openMoveProductModal('soft', '${p.id}', '${p.name.replace(/'/g, "\\'")}')">Mover</button>
+          <button class="btn-delete" onclick="requestDelete('product', 'soft', '${p.id}', '${p.name}')">Excluir</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  if (products.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:32px; color:rgba(15,59,46,0.4);">Nenhum item da Linha Soft encontrado.</td></tr>';
+  }
+}
+
 // ---- Category Tables ----
 async function renderCategoryTables() {
   await renderCatTable('gelato', 'gelatoCatBody');
   await renderCatTable('chocolate', 'chocoCatBody');
+  await renderCatTable('soft', 'softCatBody');
   await renderCatTable('diversos', 'diversosCatBody');
 }
 
@@ -308,6 +356,9 @@ function initSearch() {
   document.getElementById('chocolateSearch').addEventListener('input', (e) => {
     renderChocolateTable(e.target.value);
   });
+  document.getElementById('softSearch').addEventListener('input', (e) => {
+    renderSoftTable(e.target.value);
+  });
   document.getElementById('diversosSearch').addEventListener('input', (e) => {
     renderDiversosTable(e.target.value);
   });
@@ -317,9 +368,11 @@ function initSearch() {
 function initAddButtons() {
   document.getElementById('addGelatoBtn').addEventListener('click', () => openProductModal('gelato'));
   document.getElementById('addChocolateBtn').addEventListener('click', () => openProductModal('chocolate'));
+  document.getElementById('addSoftBtn').addEventListener('click', () => openProductModal('soft'));
   document.getElementById('addDiversosBtn').addEventListener('click', () => openDiversosModal());
   document.getElementById('addGelatoCatBtn').addEventListener('click', () => openCategoryModal('gelato'));
   document.getElementById('addChocoCatBtn').addEventListener('click', () => openCategoryModal('chocolate'));
+  document.getElementById('addSoftCatBtn').addEventListener('click', () => openCategoryModal('soft'));
   document.getElementById('addDiversosCatBtn').addEventListener('click', () => openCategoryModal('diversos'));
 }
 
@@ -395,7 +448,7 @@ async function openProductModal(type, productId = null) {
   if (productId) {
     const product = await getProductById(type, productId);
     if (!product) return;
-    title.textContent = 'Editar ' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : 'Produto');
+    title.textContent = 'Editar ' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : type === 'soft' ? 'Linha Soft' : 'Produto');
     document.getElementById('prodEditId').value = product.id;
     document.getElementById('prodName').value = product.name;
     document.getElementById('prodDescription').value = product.description;
@@ -418,7 +471,7 @@ async function openProductModal(type, productId = null) {
       };
     }
   } else {
-    title.textContent = 'Novo ' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : 'Produto');
+    title.textContent = 'Novo ' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : type === 'soft' ? 'Linha Soft' : 'Produto');
     document.getElementById('prodEditId').value = '';
     form.reset();
   }
@@ -569,7 +622,7 @@ async function openCategoryModal(type, catId = null) {
     document.getElementById('catEditId').value = cat.id;
     document.getElementById('catName').value = cat.name;
   } else {
-    title.textContent = 'Nova Categoria (' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : 'Diversos') + ')';
+    title.textContent = 'Nova Categoria (' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : type === 'soft' ? 'Linha Soft' : 'Diversos') + ')';
     document.getElementById('catEditId').value = '';
     document.getElementById('catName').value = '';
   }
@@ -693,10 +746,84 @@ function initFlavorsOfDayBtn() {
   });
 }
 
+// ---- Move Product Modal ----
+function initMoveProductModal() {
+  const modal = document.getElementById('moveProductModal');
+  const closeBtn = document.getElementById('moveProductClose');
+  const form = document.getElementById('moveProductForm');
+  const typeSelect = document.getElementById('moveTargetType');
+
+  closeBtn.addEventListener('click', () => closeModal('moveProductModal'));
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal('moveProductModal');
+  });
+
+  // When target type changes, load categories for that type
+  typeSelect.addEventListener('change', async () => {
+    const targetType = typeSelect.value;
+    const catSelect = document.getElementById('moveTargetCategory');
+    const categories = await getCategories(targetType);
+    catSelect.innerHTML = '<option value="">Sem categoria</option>' +
+      categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const productId = document.getElementById('moveProductId').value;
+    const currentType = document.getElementById('moveProductCurrentType').value;
+    const targetType = typeSelect.value;
+    const targetCategory = document.getElementById('moveTargetCategory').value || null;
+
+    // Get the product first
+    const product = await getProductById(currentType, productId);
+    if (!product) {
+      showToast('ERRO: Produto nao encontrado.', 'error');
+      return;
+    }
+
+    // Update the product with new type and category
+    const result = await updateProduct(currentType, productId, {
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      category: targetCategory,
+      type: targetType,
+      imageUrl: product.imageUrl ? product.imageUrl.replace(SITE_BASE_URL + '/', '') : '',
+    });
+
+    if (result) {
+      showToast(`Produto "${product.name}" movido para ${targetType === 'gelato' ? 'Gelato' : targetType === 'chocolate' ? 'Chocolate' : targetType === 'soft' ? 'Linha Soft' : 'Diversos'} com sucesso!`);
+      closeModal('moveProductModal');
+      await refreshTables();
+    } else {
+      showToast('ERRO: Nao foi possivel mover o produto.', 'error');
+    }
+  });
+}
+
+async function openMoveProductModal(currentType, productId, productName) {
+  const title = document.getElementById('moveProductTitle');
+  title.textContent = `Mover "${productName}"`;
+  document.getElementById('moveProductId').value = productId;
+  document.getElementById('moveProductCurrentType').value = currentType;
+
+  const typeSelect = document.getElementById('moveTargetType');
+  typeSelect.value = currentType;
+
+  // Load categories for current type
+  const categories = await getCategories(currentType);
+  const catSelect = document.getElementById('moveTargetCategory');
+  catSelect.innerHTML = '<option value="">Sem categoria</option>' +
+    categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+  openModal('moveProductModal');
+}
+
 // ---- Refresh ----
 async function refreshTables() {
   await renderGelatoTable(document.getElementById('gelatoSearch').value);
   await renderChocolateTable(document.getElementById('chocolateSearch').value);
+  await renderSoftTable(document.getElementById('softSearch').value);
   await renderDiversosTable(document.getElementById('diversosSearch').value);
   await renderCategoryTables();
   await renderFlavorsOfDay();

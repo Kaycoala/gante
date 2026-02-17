@@ -21,6 +21,7 @@
       <div class="nav-links">
         <a href="#sabores">Sabores</a>
         <a href="#chocolates">Chocolates</a>
+        <a href="#linhasoft">Linha Soft</a>
         <a href="#pedido">Pedido</a>
         <a href="#historia">Historia</a>
         <a href="#contato">Contato</a>
@@ -38,6 +39,7 @@
   <div class="mobile-nav" id="mobileNav">
     <a href="#sabores">Sabores</a>
     <a href="#chocolates">Chocolates</a>
+    <a href="#linhasoft">Linha Soft</a>
     <a href="#pedido">Monte Seu Pedido</a>
     <a href="#historia">Nossa Historia</a>
     <a href="#contato">Contato</a>
@@ -92,6 +94,21 @@
     </div>
   </section>
 
+  <!-- ========== LINHA SOFT ========== -->
+  <section class="section" id="linhasoft">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <span class="section-subtitle">Linha Soft</span>
+        <h2>Soft Artesanal</h2>
+        <p class="section-desc">
+          Nosso soft cremoso e irresistivel, feito com ingredientes de alta qualidade para uma experiencia unica.
+        </p>
+      </div>
+      <div class="filter-bar animate-on-scroll" id="softFilters"></div>
+      <div class="products-grid" id="softGrid"></div>
+    </div>
+  </section>
+
   <!-- ========== PEDIDO (ORDER BUILDER) ========== -->
   <section class="section section-cream" id="pedido">
     <div class="container">
@@ -106,6 +123,7 @@
         <div class="order-tabs">
           <button class="order-tab active" data-tab="gelato">Gelato</button>
           <button class="order-tab" data-tab="chocolate">Chocolates</button>
+          <button class="order-tab" data-tab="soft">Linha Soft</button>
           <button class="order-tab" data-tab="diversos">Diversos</button>
         </div>
 
@@ -141,6 +159,19 @@
             <div class="flavor-grid" id="chocolateChoices"></div>
 
             <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addChocolateBtn">
+              Adicionar ao Pedido
+            </button>
+          </div>
+        </div>
+
+        <!-- LINHA SOFT TAB -->
+        <div class="order-content" id="orderSoft">
+          <div class="order-config">
+            <h4>Escolha os Itens da Linha Soft e a Quantidade</h4>
+            <p style="font-size:0.9rem; color:rgba(15,59,46,0.6); margin-bottom:20px;">Selecione os itens e a quantidade desejada.</p>
+            <div class="flavor-grid" id="softChoices"></div>
+
+            <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addSoftOrderBtn">
               Adicionar ao Pedido
             </button>
           </div>
@@ -321,6 +352,7 @@
           <div class="footer-links">
             <a href="#sabores">Sabores</a>
             <a href="#chocolates">Chocolates</a>
+            <a href="#linhasoft">Linha Soft</a>
             <a href="#pedido">Monte Seu Pedido</a>
             <a href="#historia">Nossa Historia</a>
             <a href="#contato">Contato</a>
@@ -331,6 +363,7 @@
           <div class="footer-links" id="footerCategories">
             <a href="#sabores">Gelatos</a>
             <a href="#chocolates">Chocolates</a>
+            <a href="#linhasoft">Linha Soft</a>
             <a href="#pedido">Diversos</a>
           </div>
         </div>
