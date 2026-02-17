@@ -112,7 +112,7 @@ function initImageUpload() {
   fileInput.addEventListener('input', () => {
     const filename = fileInput.value.trim();
     if (filename) {
-      const imagePath = 'https://ganteartesanal.com.br/images/produtos/' + filename;
+      const imagePath = (typeof SITE_BASE_URL !== 'undefined' ? SITE_BASE_URL : 'https://ganteartesanal.com.br') + '/images/produtos/' + filename;
       previewImg.src = imagePath;
       previewImg.onerror = () => {
         previewWrap.style.display = 'none';
@@ -387,10 +387,12 @@ async function openProductModal(type, productId = null) {
 
     // Se ja tem imagem, preencher o campo com o nome do arquivo
     if (product.imageUrl && product.imageUrl.length > 0) {
-      // Extrair apenas o nome do arquivo do path (ex: "images/produtos/pistacchio.jpg" -> "pistacchio.jpg")
-      const filename = product.imageUrl.replace(/^images\/produtos\//, '');
+      // Extrair apenas o nome do arquivo do path
+      const filename = product.imageUrl.replace(/^(https?:\/\/[^/]+\/)?(images\/produtos\/)?/, '');
       document.getElementById('prodImageFile').value = filename;
-      document.getElementById('imagePreview').src = product.imageUrl;
+      // Usar URL absoluta para o preview
+      const previewSrc = product.imageUrl.startsWith('http') ? product.imageUrl : ((typeof SITE_BASE_URL !== 'undefined' ? SITE_BASE_URL : 'https://ganteartesanal.com.br') + '/' + product.imageUrl);
+      document.getElementById('imagePreview').src = previewSrc;
       document.getElementById('imagePreview').onload = () => {
         document.getElementById('imagePreviewWrap').style.display = 'block';
       };
