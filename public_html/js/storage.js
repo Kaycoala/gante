@@ -16,25 +16,14 @@ const SITE_BASE_URL = 'https://ganteartesanal.com.br';
 
 const API_BASE = '/api';
 
-// Flag: a API PHP esta disponivel?
-let _apiAvailable = null; // null = nao testado, true/false
-let _lastApiCheck = 0;    // timestamp da ultima verificacao
-
 // ---- Testar se a API PHP esta online ----
+// SEMPRE forca uma verificacao nova a cada chamada (sem cache)
 async function checkApiAvailability() {
-  // Se ja testou e esta online, retorna true (cache permanente quando online)
-  if (_apiAvailable === true) return true;
-
-  // Se deu false antes, re-tenta a cada 5 segundos
-  const now = Date.now();
-  if (_apiAvailable === false && (now - _lastApiCheck) < 5000) return false;
-
-  _lastApiCheck = now;
-
   try {
     const resp = await fetch(`${API_BASE}/extras.php?table=gelato_sizes`, {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
+      cache: 'no-store',
     });
 
     if (resp.ok) {
@@ -42,7 +31,6 @@ async function checkApiAvailability() {
       try {
         const data = JSON.parse(text);
         if (Array.isArray(data)) {
-          _apiAvailable = true;
           return true;
         }
       } catch (parseErr) {
@@ -50,10 +38,8 @@ async function checkApiAvailability() {
       }
     }
 
-    _apiAvailable = false;
     return false;
   } catch (e) {
-    _apiAvailable = false;
     return false;
   }
 }
@@ -62,6 +48,7 @@ async function checkApiAvailability() {
 async function apiFetch(url, options = {}) {
   const response = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
+    cache: 'no-store',
     ...options,
   });
 
@@ -84,7 +71,30 @@ async function apiFetch(url, options = {}) {
 }
 
 // ---- Initialization ----
+// Limpa qualquer cache/cookie/storage antigo e forca busca do banco
 async function initData() {
+  // Limpar localStorage e sessionStorage de dados antigos
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('gante_') || key.startsWith('data_') || key.startsWith('products_') || key.startsWith('categories_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+
+    // Limpar cookies relacionados a dados
+    document.cookie.split(';').forEach(c => {
+      const name = c.trim().split('=')[0];
+      if (name && (name.startsWith('gante_') || name.startsWith('data_') || name.startsWith('products_'))) {
+        document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+      }
+    });
+  } catch (e) {
+    // Ignorar erros de limpeza
+  }
+
   await checkApiAvailability();
 }
 
@@ -147,11 +157,9 @@ async function addProduct(type, product) {
       method: 'POST',
       body: JSON.stringify(body),
     });
-    _apiAvailable = true; // API confirmada online
     return mapProductFromDB(data);
   } catch (err) {
     console.error('[Gante] Erro ao adicionar produto:', err);
-    _apiAvailable = false;
     return null;
   }
 }
@@ -171,11 +179,9 @@ async function updateProduct(type, id, updates) {
       method: 'PUT',
       body: JSON.stringify(body),
     });
-    _apiAvailable = true; // API confirmada online
     return mapProductFromDB(data);
   } catch (err) {
     console.error('[Gante] Erro ao atualizar produto:', err);
-    _apiAvailable = false;
     return null;
   }
 }
@@ -185,10 +191,8 @@ async function deleteProduct(type, id) {
     await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
-    _apiAvailable = true;
   } catch (err) {
     console.error('[Gante] Erro ao deletar produto:', err);
-    _apiAvailable = false;
     throw err;
   }
 }
@@ -216,11 +220,9 @@ async function addCategory(type, category) {
       method: 'POST',
       body: JSON.stringify(body),
     });
-    _apiAvailable = true;
     return mapCategoryFromDB(data);
   } catch (err) {
     console.error('[Gante] Erro ao adicionar categoria:', err);
-    _apiAvailable = false;
     return null;
   }
 }
@@ -232,11 +234,9 @@ async function updateCategory(type, id, updates) {
       method: 'PUT',
       body: JSON.stringify(body),
     });
-    _apiAvailable = true;
     return mapCategoryFromDB(data);
   } catch (err) {
     console.error('[Gante] Erro ao atualizar categoria:', err);
-    _apiAvailable = false;
     return null;
   }
 }
@@ -246,10 +246,8 @@ async function deleteCategory(type, id) {
     await apiFetch(`${API_BASE}/categories.php?id=${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
-    _apiAvailable = true;
   } catch (err) {
     console.error('[Gante] Erro ao deletar categoria:', err);
-    _apiAvailable = false;
     throw err;
   }
 }
