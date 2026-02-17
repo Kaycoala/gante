@@ -76,9 +76,20 @@ try {
     ");
     $results[] = 'Tabela "toppings" criada.';
 
+    // ========== LIMPAR DADOS ANTIGOS (para re-execucao segura) ==========
+
+    $db->exec('DELETE FROM products');
+    $db->exec('DELETE FROM categories');
+    $db->exec('DELETE FROM gelato_sizes');
+    $db->exec('DELETE FROM chocolate_boxes');
+    $db->exec('DELETE FROM toppings');
+    $db->exec('ALTER TABLE products AUTO_INCREMENT = 1');
+    $db->exec('ALTER TABLE categories AUTO_INCREMENT = 1');
+    $results[] = 'Dados antigos removidos (re-execucao segura).';
+
     // ========== SEED: CATEGORIAS ==========
 
-    $catStmt = $db->prepare('INSERT IGNORE INTO categories (name, type) VALUES (:name, :type)');
+    $catStmt = $db->prepare('INSERT INTO categories (name, type) VALUES (:name, :type)');
 
     $gelatoCats = [
         ['name' => 'Classicos Italianos', 'type' => 'gelato'],
@@ -225,7 +236,7 @@ try {
 
     // ========== SEED: GELATO SIZES ==========
 
-    $sizeStmt = $db->prepare('INSERT IGNORE INTO gelato_sizes (id, name, balls, price) VALUES (:id, :name, :balls, :price)');
+    $sizeStmt = $db->prepare('INSERT INTO gelato_sizes (id, name, balls, price) VALUES (:id, :name, :balls, :price)');
     $sizes = [
         ['pequeno', 'Pequeno',     1, 10.00],
         ['medio',   'Medio',       2, 16.00],
@@ -242,7 +253,7 @@ try {
 
     // ========== SEED: CHOCOLATE BOXES ==========
 
-    $boxStmt = $db->prepare('INSERT IGNORE INTO chocolate_boxes (id, name, units, price) VALUES (:id, :name, :units, :price)');
+    $boxStmt = $db->prepare('INSERT INTO chocolate_boxes (id, name, units, price) VALUES (:id, :name, :units, :price)');
     $boxes = [
         ['box6',  'Caixa Pequena', 6,  48.00],
         ['box12', 'Caixa Media',   12, 89.00],
@@ -255,7 +266,7 @@ try {
 
     // ========== SEED: TOPPINGS ==========
 
-    $topStmt = $db->prepare('INSERT IGNORE INTO toppings (id, name, price) VALUES (:id, :name, :price)');
+    $topStmt = $db->prepare('INSERT INTO toppings (id, name, price) VALUES (:id, :name, :price)');
     $toppings = [
         ['t1', 'Calda de Chocolate',   3.00],
         ['t2', 'Calda de Caramelo',    3.00],

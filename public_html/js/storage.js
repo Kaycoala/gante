@@ -1,12 +1,11 @@
 // ============================================
-// GANTE — CRUD Helpers (PHP/MySQL API + Fallback)
+// GANTE — CRUD Helpers (PHP/MySQL API)
 // ============================================
 //
 // Este arquivo conecta ao backend PHP/MySQL na Hostinger.
-// Se a API nao estiver disponivel (ex: ambiente local sem PHP),
-// faz fallback automatico para os dados estaticos do data.js.
+// Se a API nao estiver disponivel, usa dados estaticos do data.js.
 //
-// ENDPOINTS (quando PHP esta ativo):
+// ENDPOINTS:
 //   - /api/products.php    (GET, POST, PUT, DELETE)
 //   - /api/categories.php  (GET, POST, PUT, DELETE)
 //   - /api/extras.php      (GET - gelato_sizes, chocolate_boxes, toppings)
@@ -18,24 +17,39 @@ let _apiAvailable = null; // null = nao testado, true/false
 
 // ---- Testar se a API PHP esta online ----
 async function checkApiAvailability() {
-  if (_apiAvailable !== null) return _apiAvailable;
+  // Ja testou e esta online? Nao re-testar
+  if (_apiAvailable === true) return true;
+
   try {
+    console.log('[v0] Testando disponibilidade da API PHP...');
     const resp = await fetch(`${API_BASE}/extras.php?table=gelato_sizes`, {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
     });
-    // Se retornar JSON valido, API esta online
+
+    console.log('[v0] API respondeu com status:', resp.status);
+
     if (resp.ok) {
-      const data = await resp.json();
-      if (Array.isArray(data)) {
-        _apiAvailable = true;
-        return true;
+      const text = await resp.text();
+      console.log('[v0] Resposta da API (primeiros 300 chars):', text.substring(0, 300));
+      try {
+        const data = JSON.parse(text);
+        if (Array.isArray(data)) {
+          _apiAvailable = true;
+          console.log('[v0] API PHP disponivel! Dados virao do MySQL.');
+          return true;
+        }
+      } catch (parseErr) {
+        console.warn('[v0] API retornou resposta nao-JSON:', text.substring(0, 500));
       }
     }
+
     _apiAvailable = false;
+    console.warn('[v0] API PHP nao disponivel. Usando fallback data.js.');
     return false;
   } catch (e) {
     _apiAvailable = false;
+    console.warn('[v0] Erro ao testar API:', e.message);
     return false;
   }
 }
@@ -46,7 +60,17 @@ async function apiFetch(url, options = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
-  const data = await response.json();
+
+  const text = await response.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    console.error('[v0] apiFetch: resposta nao-JSON de', url, ':', text.substring(0, 500));
+    throw new Error('Resposta invalida do servidor');
+  }
+
   if (!response.ok) {
     throw new Error(data.error || 'Erro na requisicao');
   }
@@ -57,9 +81,9 @@ async function apiFetch(url, options = {}) {
 async function initData() {
   const online = await checkApiAvailability();
   if (online) {
-    console.log('API PHP/MySQL disponivel. Dados serao carregados do banco.');
+    console.log('[v0] initData: API PHP/MySQL ativa.');
   } else {
-    console.log('API PHP nao disponivel. Usando dados estaticos do data.js como fallback.');
+    console.log('[v0] initData: Usando fallback data.js.');
   }
 }
 
@@ -73,10 +97,9 @@ async function getProducts(type) {
       const data = await apiFetch(`${API_BASE}/products.php?type=${encodeURIComponent(type)}`);
       return (data || []).map(mapProductFromDB);
     } catch (err) {
-      console.error('Erro API getProducts, usando fallback:', err);
+      console.error('[v0] Erro API getProducts:', err);
     }
   }
-  // Fallback: dados estaticos do data.js
   return getFallbackProducts(type);
 }
 
@@ -90,10 +113,9 @@ async function getProductsByCategory(type, categoryId) {
       const data = await apiFetch(url);
       return (data || []).map(mapProductFromDB);
     } catch (err) {
-      console.error('Erro API getProductsByCategory, usando fallback:', err);
+      console.error('[v0] Erro API getProductsByCategory:', err);
     }
   }
-  // Fallback
   const products = getFallbackProducts(type);
   if (!categoryId || categoryId === 'todos') return products;
   return products.filter(p => p.category === categoryId);
@@ -105,10 +127,9 @@ async function getProductById(type, id) {
       const data = await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`);
       return data ? mapProductFromDB(data) : null;
     } catch (err) {
-      console.error('Erro API getProductById, usando fallback:', err);
+      console.error('[v0] Erro API getProductById:', err);
     }
   }
-  // Fallback
   const products = getFallbackProducts(type);
   return products.find(p => String(p.id) === String(id)) || null;
 }
@@ -124,17 +145,19 @@ async function addProduct(type, product) {
         type: type,
         image_url: product.imageUrl || '',
       };
+      console.log('[v0] addProduct enviando:', JSON.stringify(body));
       const data = await apiFetch(`${API_BASE}/products.php`, {
         method: 'POST',
         body: JSON.stringify(body),
       });
+      console.log('[v0] addProduct resposta:', data);
       return mapProductFromDB(data);
     } catch (err) {
-      console.error('Erro ao adicionar produto:', err);
+      console.error('[v0] Erro ao adicionar produto:', err);
       return null;
     }
   }
-  console.warn('API indisponivel. Nao e possivel adicionar produtos sem o backend PHP.');
+  console.warn('[v0] API indisponivel. Nao e possivel adicionar produtos.');
   return null;
 }
 
@@ -149,32 +172,35 @@ async function updateProduct(type, id, updates) {
       if (updates.type !== undefined) body.type = updates.type;
       if (updates.imageUrl !== undefined) body.image_url = updates.imageUrl;
 
+      console.log('[v0] updateProduct enviando:', JSON.stringify(body));
       const data = await apiFetch(`${API_BASE}/products.php`, {
         method: 'PUT',
         body: JSON.stringify(body),
       });
+      console.log('[v0] updateProduct resposta:', data);
       return mapProductFromDB(data);
     } catch (err) {
-      console.error('Erro ao atualizar produto:', err);
+      console.error('[v0] Erro ao atualizar produto:', err);
       return null;
     }
   }
-  console.warn('API indisponivel. Nao e possivel atualizar produtos sem o backend PHP.');
+  console.warn('[v0] API indisponivel. Nao e possivel atualizar produtos.');
   return null;
 }
 
 async function deleteProduct(type, id) {
   if (await checkApiAvailability()) {
     try {
-      await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`, {
+      const data = await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       });
+      console.log('[v0] deleteProduct resposta:', data);
       return;
     } catch (err) {
-      console.error('Erro ao deletar produto:', err);
+      console.error('[v0] Erro ao deletar produto:', err);
     }
   }
-  console.warn('API indisponivel. Nao e possivel deletar produtos sem o backend PHP.');
+  console.warn('[v0] API indisponivel. Nao e possivel deletar produtos.');
 }
 
 // ============================================
@@ -187,10 +213,9 @@ async function getCategories(type) {
       const data = await apiFetch(`${API_BASE}/categories.php?type=${encodeURIComponent(type)}`);
       return (data || []).map(mapCategoryFromDB);
     } catch (err) {
-      console.error('Erro API getCategories, usando fallback:', err);
+      console.error('[v0] Erro API getCategories:', err);
     }
   }
-  // Fallback
   return getFallbackCategories(type);
 }
 
@@ -204,11 +229,10 @@ async function addCategory(type, category) {
       });
       return mapCategoryFromDB(data);
     } catch (err) {
-      console.error('Erro ao adicionar categoria:', err);
+      console.error('[v0] Erro ao adicionar categoria:', err);
       return null;
     }
   }
-  console.warn('API indisponivel.');
   return null;
 }
 
@@ -222,11 +246,10 @@ async function updateCategory(type, id, updates) {
       });
       return mapCategoryFromDB(data);
     } catch (err) {
-      console.error('Erro ao atualizar categoria:', err);
+      console.error('[v0] Erro ao atualizar categoria:', err);
       return null;
     }
   }
-  console.warn('API indisponivel.');
   return null;
 }
 
@@ -238,10 +261,9 @@ async function deleteCategory(type, id) {
       });
       return;
     } catch (err) {
-      console.error('Erro ao deletar categoria:', err);
+      console.error('[v0] Erro ao deletar categoria:', err);
     }
   }
-  console.warn('API indisponivel.');
 }
 
 // ============================================
@@ -254,10 +276,9 @@ async function getGelatoSizes() {
       const data = await apiFetch(`${API_BASE}/extras.php?table=gelato_sizes`);
       return data || [];
     } catch (err) {
-      console.error('Erro API getGelatoSizes, usando fallback:', err);
+      console.error('[v0] Erro API getGelatoSizes:', err);
     }
   }
-  // Fallback
   return typeof GELATO_SIZES !== 'undefined' ? GELATO_SIZES : [];
 }
 
@@ -271,7 +292,7 @@ async function getToppings() {
       const data = await apiFetch(`${API_BASE}/extras.php?table=toppings`);
       return data || [];
     } catch (err) {
-      console.error('Erro API getToppings, usando fallback:', err);
+      console.error('[v0] Erro API getToppings:', err);
     }
   }
   return typeof TOPPINGS !== 'undefined' ? TOPPINGS : [];
@@ -287,7 +308,7 @@ async function getChocolateBoxes() {
       const data = await apiFetch(`${API_BASE}/extras.php?table=chocolate_boxes`);
       return data || [];
     } catch (err) {
-      console.error('Erro API getChocolateBoxes, usando fallback:', err);
+      console.error('[v0] Erro API getChocolateBoxes:', err);
     }
   }
   return typeof CHOCOLATE_BOXES !== 'undefined' ? CHOCOLATE_BOXES : [];
@@ -329,9 +350,9 @@ function mapProductFromDB(row) {
   return {
     id: String(row.id),
     name: row.name,
-    description: row.description,
+    description: row.description || '',
     price: Number(row.price),
-    category: row.category ? String(row.category) : null,
+    category: row.category !== null && row.category !== undefined ? String(row.category) : null,
     type: row.type,
     imageUrl: row.image_url || '',
   };
@@ -354,7 +375,6 @@ function generateId() {
   return Math.random().toString(36).substr(2, 9);
 }
 
-// ---- Upload de imagem local (converte para base64 - fallback) ----
 function readFileAsDataURL(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
