@@ -82,7 +82,7 @@ console.log('Firebase inicializado com sucesso!');
 
 
 
-// Se Firebase nao estiver ativo, usar localStorage
+// Fallback: se Firebase nao estiver ativo
 if (!window.FIREBASE_ENABLED) {
   window.FIREBASE_ENABLED = false;
 }

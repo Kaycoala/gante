@@ -3,6 +3,7 @@
 // ============================================
 
 const ADMIN_PASSWORD = 'gante2024';
+let _adminAuthenticated = false; // autenticacao in-memory (sem sessionStorage)
 let pendingDelete = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -20,7 +21,7 @@ function initLogin() {
     const errorEl = document.getElementById('loginError');
 
     if (password === ADMIN_PASSWORD) {
-      sessionStorage.setItem('gante_admin_auth', 'true');
+      _adminAuthenticated = true;
       errorEl.classList.remove('show');
       showDashboard();
     } else {
@@ -32,7 +33,7 @@ function initLogin() {
 }
 
 function checkAuth() {
-  if (sessionStorage.getItem('gante_admin_auth') === 'true') {
+  if (_adminAuthenticated) {
     showDashboard();
   }
 }
@@ -44,7 +45,7 @@ function showDashboard() {
 }
 
 function logout() {
-  sessionStorage.removeItem('gante_admin_auth');
+  _adminAuthenticated = false;
   document.getElementById('adminDashboard').classList.remove('active');
   document.getElementById('adminLogin').style.display = 'flex';
   document.getElementById('loginPassword').value = '';

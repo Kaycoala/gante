@@ -3,10 +3,10 @@
 // ============================================
 //
 // COMO FUNCIONA:
-// Este arquivo e a "fonte da verdade" dos produtos da loja.
-// Ao alterar/adicionar/remover produtos aqui, incremente a
-// DATA_VERSION no storage.js para que as mudancas sejam
-// aplicadas no proximo carregamento da pagina.
+// Este arquivo contem os dados seed dos produtos da loja.
+// Os dados reais sao gerenciados exclusivamente pelo banco de dados
+// via API PHP/MySQL. Este arquivo serve apenas como referencia
+// e seed inicial.
 //
 // ESTRUTURA DE CADA PRODUTO:
 // {
@@ -20,20 +20,8 @@
 //                          Deixe '' para exibir placeholder com a inicial
 // }
 //
-// PARA ADICIONAR UM PRODUTO:
-// 1. Copie um objeto existente do mesmo tipo
-// 2. Altere o id (deve ser unico), nome, descricao, preco, categoria
-// 3. Coloque a imagem na pasta images/produtos/ e preencha imageUrl
-// 4. Incremente DATA_VERSION no storage.js
-//
-// PARA ATUALIZAR UM PRODUTO:
-// 1. Encontre o produto pelo id
-// 2. Altere os campos desejados (nome, preco, descricao, imagem, etc)
-// 3. Incremente DATA_VERSION no storage.js
-//
-// PARA REMOVER UM PRODUTO:
-// 1. Delete ou comente a linha do produto
-// 2. Incremente DATA_VERSION no storage.js
+// Para adicionar/atualizar/remover produtos, use o painel admin
+// que se comunica diretamente com o banco de dados.
 
 // ========== NUMERO DO WHATSAPP PARA PEDIDOS ==========
 // Substitua pelo numero da loja com codigo do pais (sem espacos, sem tracos)

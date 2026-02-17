@@ -3,6 +3,7 @@
 // ============================================
 //
 // Este arquivo conecta ao backend PHP/MySQL na Hostinger.
+// Todas as operacoes vao direto para a API, sem cache local.
 // Se a API nao estiver disponivel, retorna arrays vazios.
 // Nenhum dado hardcoded e exibido — somente dados do banco.
 //
@@ -16,21 +17,8 @@ const SITE_BASE_URL = 'https://ganteartesanal.com.br';
 
 const API_BASE = '/api';
 
-// Flag: a API PHP esta disponivel?
-let _apiAvailable = null; // null = nao testado, true/false
-let _lastApiCheck = 0;    // timestamp da ultima verificacao
-
-// ---- Testar se a API PHP esta online ----
+// ---- Testar se a API PHP esta online (sem cache, sempre verifica) ----
 async function checkApiAvailability() {
-  // Se ja testou e esta online, retorna true (cache permanente quando online)
-  if (_apiAvailable === true) return true;
-
-  // Se deu false antes, re-tenta a cada 5 segundos
-  const now = Date.now();
-  if (_apiAvailable === false && (now - _lastApiCheck) < 5000) return false;
-
-  _lastApiCheck = now;
-
   try {
     const resp = await fetch(`${API_BASE}/extras.php?table=gelato_sizes`, {
       method: 'GET',
@@ -42,7 +30,6 @@ async function checkApiAvailability() {
       try {
         const data = JSON.parse(text);
         if (Array.isArray(data)) {
-          _apiAvailable = true;
           return true;
         }
       } catch (parseErr) {
@@ -50,10 +37,8 @@ async function checkApiAvailability() {
       }
     }
 
-    _apiAvailable = false;
     return false;
   } catch (e) {
-    _apiAvailable = false;
     return false;
   }
 }
@@ -133,7 +118,6 @@ async function getProductById(type, id) {
 }
 
 async function addProduct(type, product) {
-  // Operacoes de escrita tentam direto, sem depender do cache
   try {
     const body = {
       name: product.name,
@@ -147,17 +131,14 @@ async function addProduct(type, product) {
       method: 'POST',
       body: JSON.stringify(body),
     });
-    _apiAvailable = true; // API confirmada online
     return mapProductFromDB(data);
   } catch (err) {
     console.error('[Gante] Erro ao adicionar produto:', err);
-    _apiAvailable = false;
     return null;
   }
 }
 
 async function updateProduct(type, id, updates) {
-  // Operacoes de escrita tentam direto, sem depender do cache
   try {
     const body = { id: id };
     if (updates.name !== undefined) body.name = updates.name;
@@ -171,11 +152,9 @@ async function updateProduct(type, id, updates) {
       method: 'PUT',
       body: JSON.stringify(body),
     });
-    _apiAvailable = true; // API confirmada online
     return mapProductFromDB(data);
   } catch (err) {
     console.error('[Gante] Erro ao atualizar produto:', err);
-    _apiAvailable = false;
     return null;
   }
 }
@@ -185,10 +164,8 @@ async function deleteProduct(type, id) {
     await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
-    _apiAvailable = true;
   } catch (err) {
     console.error('[Gante] Erro ao deletar produto:', err);
-    _apiAvailable = false;
     throw err;
   }
 }
@@ -216,11 +193,9 @@ async function addCategory(type, category) {
       method: 'POST',
       body: JSON.stringify(body),
     });
-    _apiAvailable = true;
     return mapCategoryFromDB(data);
   } catch (err) {
     console.error('[Gante] Erro ao adicionar categoria:', err);
-    _apiAvailable = false;
     return null;
   }
 }
@@ -232,11 +207,9 @@ async function updateCategory(type, id, updates) {
       method: 'PUT',
       body: JSON.stringify(body),
     });
-    _apiAvailable = true;
     return mapCategoryFromDB(data);
   } catch (err) {
     console.error('[Gante] Erro ao atualizar categoria:', err);
-    _apiAvailable = false;
     return null;
   }
 }
@@ -246,10 +219,8 @@ async function deleteCategory(type, id) {
     await apiFetch(`${API_BASE}/categories.php?id=${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
-    _apiAvailable = true;
   } catch (err) {
     console.error('[Gante] Erro ao deletar categoria:', err);
-    _apiAvailable = false;
     throw err;
   }
 }

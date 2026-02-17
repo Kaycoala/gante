@@ -244,29 +244,31 @@ function initOrderTabs() {
   });
 }
 
-// Gelato Sizes
-// Cache local dos tamanhos para uso no order builder
-let _gelatoSizesCache = [];
-
+// Gelato Sizes (sem cache - busca sempre da API)
 async function renderGelatoSizes() {
   const container = document.getElementById('gelatoSizes');
-  _gelatoSizesCache = await getGelatoSizes();
+  const sizes = await getGelatoSizes();
 
-  container.innerHTML = _gelatoSizesCache.map((s, i) => `
-    <div class="size-option ${i === 0 ? 'selected' : ''}" data-size="${s.id}">
+  container.innerHTML = sizes.map((s, i) => `
+    <div class="size-option ${i === 0 ? 'selected' : ''}" data-size="${s.id}" data-balls="${s.balls}" data-price="${s.price}" data-name="${s.name}">
       <strong>${s.name}</strong>
       <small>${s.balls} sabor${s.balls > 1 ? 'es' : ''}</small>
       <span class="size-price">${formatPrice(s.price)}</span>
     </div>
   `).join('');
 
-  orderState.gelatoSize = _gelatoSizesCache[0] || null;
+  orderState.gelatoSize = sizes[0] || null;
 
   container.querySelectorAll('.size-option').forEach(opt => {
     opt.addEventListener('click', () => {
       container.querySelectorAll('.size-option').forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
-      orderState.gelatoSize = _gelatoSizesCache.find(s => String(s.id) === opt.dataset.size);
+      orderState.gelatoSize = {
+        id: opt.dataset.size,
+        name: opt.dataset.name,
+        balls: Number(opt.dataset.balls),
+        price: Number(opt.dataset.price),
+      };
       orderState.selectedFlavors = [];
       updateFlavorSelection();
     });
@@ -339,16 +341,13 @@ function updateFlavorSelection() {
   });
 }
 
-// Toppings
-// Cache local dos toppings para uso no order builder
-let _toppingsCache = [];
-
+// Toppings (sem cache - busca sempre da API)
 async function renderToppings() {
   const container = document.getElementById('toppingsGrid');
-  _toppingsCache = await getToppings();
+  const toppings = await getToppings();
 
-  container.innerHTML = _toppingsCache.map(t => `
-    <div class="topping-item" data-id="${t.id}">
+  container.innerHTML = toppings.map(t => `
+    <div class="topping-item" data-id="${t.id}" data-name="${t.name}" data-price="${t.price}">
       ${t.name} (+${formatPrice(t.price)})
     </div>
   `).join('');
@@ -532,14 +531,15 @@ async function addGelatoToOrder() {
     return g ? g.name : id;
   });
 
+  // Resolve toppings a partir dos data-attributes no DOM (sem cache)
   const toppingNames = orderState.selectedToppings.map(id => {
-    const t = _toppingsCache.find(tp => String(tp.id) === String(id));
-    return t ? t.name : id;
+    const el = document.querySelector(`#toppingsGrid .topping-item[data-id="${id}"]`);
+    return el ? el.dataset.name : id;
   });
 
   const toppingCost = orderState.selectedToppings.reduce((sum, id) => {
-    const t = _toppingsCache.find(tp => String(tp.id) === String(id));
-    return sum + (t ? t.price : 0);
+    const el = document.querySelector(`#toppingsGrid .topping-item[data-id="${id}"]`);
+    return sum + (el ? Number(el.dataset.price) : 0);
   }, 0);
 
   const itemPrice = (orderState.gelatoSize.price + toppingCost) * orderState.gelatoQty;
