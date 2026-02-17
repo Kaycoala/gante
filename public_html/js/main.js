@@ -441,11 +441,15 @@ async function renderDiversosChoices() {
   const diversos = await getProducts('diversos');
 
   container.innerHTML = diversos.map(d => {
+    const hasImg = d.imageUrl && d.imageUrl.length > 0;
     const hue = hashStringToHue(d.name);
     return `
       <div class="choco-choice-item" data-id="${d.id}">
         <div class="choco-choice-info">
-          <span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>
+          ${hasImg
+            ? `<img class="flavor-thumb" src="${d.imageUrl}" alt="${d.name}">`
+            : `<span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>`
+          }
           <span class="choco-choice-name">${d.name}</span>
           <span class="choco-choice-price">${formatPrice(d.price)}/un</span>
         </div>

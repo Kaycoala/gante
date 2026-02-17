@@ -466,7 +466,7 @@ async function openDiversosModal(productId = null) {
     document.getElementById('divDescription').value = product.description;
     document.getElementById('divPrice').value = product.price;
     if (product.imageUrl) {
-      const filename = product.imageUrl.replace(/^images\/produtos\//, '');
+      const filename = product.imageUrl.replace(/^(https?:\/\/[^/]+\/)?(images\/produtos\/)?/, '');
       document.getElementById('divImageFile').value = filename;
     } else {
       document.getElementById('divImageFile').value = '';

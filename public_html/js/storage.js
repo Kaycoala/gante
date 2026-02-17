@@ -18,11 +18,18 @@ const API_BASE = '/api';
 
 // Flag: a API PHP esta disponivel?
 let _apiAvailable = null; // null = nao testado, true/false
+let _lastApiCheck = 0;    // timestamp da ultima verificacao
 
 // ---- Testar se a API PHP esta online ----
 async function checkApiAvailability() {
-  // Ja testou e esta online? Nao re-testar
+  // Se ja testou e esta online, retorna true (cache permanente quando online)
   if (_apiAvailable === true) return true;
+
+  // Se deu false antes, re-tenta a cada 5 segundos
+  const now = Date.now();
+  if (_apiAvailable === false && (now - _lastApiCheck) < 5000) return false;
+
+  _lastApiCheck = now;
 
   try {
     const resp = await fetch(`${API_BASE}/extras.php?table=gelato_sizes`, {
@@ -39,7 +46,7 @@ async function checkApiAvailability() {
           return true;
         }
       } catch (parseErr) {
-        console.warn('API retornou resposta nao-JSON.');
+        // resposta nao-JSON
       }
     }
 
