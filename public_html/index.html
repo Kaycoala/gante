@@ -99,7 +99,7 @@
         <span class="section-subtitle">Monte Seu Pedido</span>
         <h2>Escolha e Personalize</h2>
         <p class="section-desc">
-          Selecione seus sabores favoritos, escolha o tamanho e personalize com coberturas especiais.
+          Escolha o tamanho do seu gelato, selecione chocolates e itens diversos. O sabor do gelato voce combina pelo WhatsApp!
         </p>
       </div>
       <div class="order-builder animate-on-scroll">
@@ -115,12 +115,17 @@
             <h4>Escolha o Tamanho</h4>
             <div class="size-selector" id="gelatoSizes"></div>
 
-            <h4>Escolha os Sabores <span id="flavorCount" style="font-family: var(--font-body); font-weight: 400; font-size: 0.85rem; color: rgba(15,59,46,0.5);"></span></h4>
-            <div class="flavor-grid" id="gelatoFlavors"></div>
+            <!-- Cup image preview -->
+            <div class="gelato-cup-preview" id="gelatoCupPreview" style="display:none;">
+              <img id="gelatoCupImage" src="" alt="Imagem do copo selecionado">
+              <span id="gelatoCupSizeName" class="gelato-cup-size-label"></span>
+            </div>
 
-            <div class="toppings-section">
-              <h4>Coberturas (Opcional)</h4>
-              <div class="topping-grid" id="toppingsGrid"></div>
+            <!-- Sabores do dia (apenas exibicao, sem selecao) -->
+            <div class="gelato-flavors-today" id="gelatoFlavorsToday" style="display:none;">
+              <h4>Sabores do Dia</h4>
+              <p class="gelato-flavors-today-desc">Escolha seu sabor na conversa pelo WhatsApp.</p>
+              <div class="gelato-flavors-today-grid" id="gelatoFlavorsTodayGrid"></div>
             </div>
 
             <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addGelatoBtn">

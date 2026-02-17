@@ -81,6 +81,21 @@
             <button class="btn btn-primary btn-sm" id="addGelatoBtn">+ Novo Gelato</button>
           </div>
         </div>
+
+        <!-- Sabores do Dia -->
+        <div class="admin-table-wrap" style="margin-bottom:24px;">
+          <div class="admin-table-header">
+            <strong>Sabores do Dia</strong>
+            <button class="btn btn-primary btn-sm" id="saveFlavorsOfDayBtn">Salvar Sabores do Dia</button>
+          </div>
+          <div style="padding:16px 24px;">
+            <p style="font-size:0.85rem; color:rgba(15,59,46,0.55); margin-bottom:16px;">
+              Selecione os sabores disponiveis hoje. Eles aparecerao no site apenas como informacao (os clientes escolhem o sabor via WhatsApp).
+            </p>
+            <div id="flavorsOfDayGrid" class="admin-flavors-of-day-grid"></div>
+          </div>
+        </div>
+
         <div class="admin-table-wrap">
           <div class="admin-table-header">
             <input type="text" class="admin-table-search" id="gelatoSearch" placeholder="Buscar gelatos...">
@@ -141,7 +156,7 @@
             <thead>
               <tr>
                 <th>Nome</th>
-                <th>Descricao</th>
+                <th>Categoria</th>
                 <th>Preco</th>
                 <th>Acoes</th>
               </tr>
@@ -189,6 +204,23 @@
                 </tr>
               </thead>
               <tbody id="chocoCatBody"></tbody>
+            </table>
+          </div>
+          <!-- Diversos Categories -->
+          <div class="admin-table-wrap" style="flex:1; min-width:300px;">
+            <div class="admin-table-header">
+              <strong>Categorias de Diversos</strong>
+              <button class="btn btn-primary btn-sm" id="addDiversosCatBtn">+ Nova</button>
+            </div>
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>ID</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="diversosCatBody"></tbody>
             </table>
           </div>
         </div>
@@ -257,9 +289,15 @@
           <label for="divDescription">Descricao</label>
           <textarea id="divDescription" placeholder="Descricao do item" required></textarea>
         </div>
-        <div class="form-group">
-          <label for="divPrice">Preco (R$)</label>
-          <input type="number" id="divPrice" step="0.01" min="0" placeholder="0.00" required>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="divPrice">Preco (R$)</label>
+            <input type="number" id="divPrice" step="0.01" min="0" placeholder="0.00" required>
+          </div>
+          <div class="form-group">
+            <label for="divCategory">Categoria</label>
+            <select id="divCategory"><option value="">Sem categoria</option></select>
+          </div>
         </div>
         <div class="form-group">
           <label for="divImageFile">Arquivo da Imagem</label>

@@ -785,6 +785,85 @@ p {
   font-size: 1.1rem;
 }
 
+/* Gelato Cup Preview */
+.gelato-cup-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  background: rgba(var(--color-cream-rgb), 0.4);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid rgba(var(--color-cream-rgb), 0.8);
+}
+
+.gelato-cup-preview img {
+  max-height: 180px;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+
+.gelato-cup-size-label {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* Gelato Flavors of the Day */
+.gelato-flavors-today {
+  margin-bottom: 24px;
+}
+
+.gelato-flavors-today h4 {
+  margin-bottom: 4px;
+}
+
+.gelato-flavors-today-desc {
+  font-size: 0.85rem;
+  color: rgba(var(--color-primary-rgb), 0.5);
+  margin-bottom: 16px;
+}
+
+.gelato-flavors-today-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.flavor-today-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(var(--color-cream-rgb), 0.4);
+  border: 1.5px solid rgba(var(--color-cream-rgb), 0.8);
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  color: var(--color-primary);
+}
+
+.flavor-today-name {
+  font-weight: 500;
+}
+
+@media (max-width: 767px) {
+  .gelato-flavors-today-grid {
+    grid-template-columns: 1fr;
+  }
+  .gelato-cup-preview img {
+    max-height: 140px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .gelato-flavors-today-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 /* Flavor / Chocolate selector */
 .flavor-grid {
   display: grid;
@@ -906,6 +985,22 @@ p {
   border-left: 2px solid #fff;
   border-bottom: 2px solid #fff;
   transform: rotate(-45deg) translateY(-1px);
+}
+
+/* Diversos Category Label */
+.diversos-category-label {
+  grid-column: 1 / -1;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  padding: 8px 0 4px;
+  border-bottom: 1.5px solid rgba(var(--color-cream-rgb), 0.8);
+  margin-bottom: 2px;
+}
+
+.diversos-category-label:first-child {
+  padding-top: 0;
 }
 
 /* Chocolate Choice Item (com quantidade) */
@@ -2116,6 +2211,74 @@ p {
   font-size: 1rem;
   color: rgba(255,255,255,0.7);
   flex-shrink: 0;
+}
+
+/* Admin Flavors of the Day Grid */
+.admin-flavors-of-day-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .admin-flavors-of-day-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .admin-flavors-of-day-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.admin-flavor-day-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1.5px solid rgba(var(--color-cream-rgb), 0.8);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.admin-flavor-day-item:hover {
+  border-color: var(--color-gold);
+  background: rgba(var(--color-gold-rgb), 0.05);
+}
+
+.admin-flavor-day-item.selected {
+  border-color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb), 0.05);
+}
+
+.admin-flavor-day-check {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(var(--color-primary-rgb), 0.3);
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.admin-flavor-day-item.selected .admin-flavor-day-check {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.admin-flavor-day-item.selected .admin-flavor-day-check::after {
+  content: '';
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) translateY(-1px);
 }
 
 /* ---- Scrollbar ---- */

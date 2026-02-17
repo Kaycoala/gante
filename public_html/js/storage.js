@@ -319,6 +319,35 @@ async function getChocolateBoxes() {
 // ============================================
 
 // ============================================
+// FLAVORS OF THE DAY
+// ============================================
+
+async function getFlavorsOfTheDay() {
+  if (await checkApiAvailability()) {
+    try {
+      const data = await apiFetch(`${API_BASE}/extras.php?table=flavors_of_the_day`);
+      return (data || []).map(mapProductFromDB);
+    } catch (err) {
+      console.error('[Gante] Erro API getFlavorsOfTheDay:', err);
+    }
+  }
+  return [];
+}
+
+async function setFlavorsOfTheDay(productIds) {
+  try {
+    const data = await apiFetch(`${API_BASE}/extras.php`, {
+      method: 'POST',
+      body: JSON.stringify({ table: 'flavors_of_the_day', product_ids: productIds }),
+    });
+    return data;
+  } catch (err) {
+    console.error('[Gante] Erro ao salvar sabores do dia:', err);
+    return null;
+  }
+}
+
+// ============================================
 // MAPPERS (snake_case DB -> camelCase Frontend)
 // ============================================
 

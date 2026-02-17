@@ -202,8 +202,6 @@ let orderState = {
   items: [],
   // Gelato state
   gelatoSize: null,
-  selectedFlavors: [], // array of flavor IDs (simple selection)
-  selectedToppings: [],
   gelatoQty: 1,
   // Chocolate state
   selectedChocos: {}, // { chocolateId: quantity }
@@ -214,8 +212,7 @@ let orderState = {
 async function initOrderBuilder() {
   initOrderTabs();
   await renderGelatoSizes();
-  await renderGelatoFlavors();
-  await renderToppings();
+  await renderGelatoFlavorsToday();
   await renderChocolateChoices();
   await renderDiversosChoices();
   initQtyControls();
@@ -261,109 +258,80 @@ async function renderGelatoSizes() {
   `).join('');
 
   orderState.gelatoSize = _gelatoSizesCache[0] || null;
+  updateCupPreview();
 
   container.querySelectorAll('.size-option').forEach(opt => {
     opt.addEventListener('click', () => {
       container.querySelectorAll('.size-option').forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
       orderState.gelatoSize = _gelatoSizesCache.find(s => String(s.id) === opt.dataset.size);
-      orderState.selectedFlavors = [];
-      updateFlavorSelection();
+      updateCupPreview();
     });
   });
 }
 
-// Gelato Flavors (selecao simples - apenas toggle)
-async function renderGelatoFlavors() {
-  const container = document.getElementById('gelatoFlavors');
-  const gelatos = await getProducts('gelato');
+// Cup image preview based on selected size
+function updateCupPreview() {
+  const previewEl = document.getElementById('gelatoCupPreview');
+  const imgEl = document.getElementById('gelatoCupImage');
+  const labelEl = document.getElementById('gelatoCupSizeName');
 
-  container.innerHTML = gelatos.map(g => {
-    const hasImg = g.imageUrl && g.imageUrl.length > 0;
-    const hue = hashStringToHue(g.name);
+  if (!orderState.gelatoSize) {
+    previewEl.style.display = 'none';
+    return;
+  }
+
+  // Image path convention: images/copos/{size_id}.png
+  // User will set the actual images later
+  const sizeName = orderState.gelatoSize.name.toLowerCase().replace(/\s+/g, '-');
+  const imagePath = `images/copos/${sizeName}.png`;
+
+  imgEl.src = imagePath;
+  imgEl.alt = `Copo ${orderState.gelatoSize.name}`;
+  labelEl.textContent = orderState.gelatoSize.name;
+  previewEl.style.display = 'flex';
+
+  // Hide preview if image fails to load
+  imgEl.onerror = () => {
+    previewEl.style.display = 'none';
+  };
+  imgEl.onload = () => {
+    previewEl.style.display = 'flex';
+  };
+}
+
+// Sabores do dia (apenas exibicao - sem selecao)
+async function renderGelatoFlavorsToday() {
+  const container = document.getElementById('gelatoFlavorsTodayGrid');
+  const section = document.getElementById('gelatoFlavorsToday');
+
+  // Buscar sabores do dia da API
+  let flavorsToday = [];
+  try {
+    flavorsToday = await getFlavorsOfTheDay();
+  } catch (e) {
+    // silently fail
+  }
+
+  if (flavorsToday.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  container.innerHTML = flavorsToday.map(f => {
+    const hasImg = f.imageUrl && f.imageUrl.length > 0;
+    const hue = hashStringToHue(f.name);
     return `
-      <div class="flavor-select-item" data-id="${g.id}">
-        <div class="flavor-select-check"></div>
-        <div class="choco-choice-info">
-          ${hasImg
-            ? `<img class="flavor-thumb" src="${g.imageUrl}" alt="${g.name}">`
-            : `<span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>`
-          }
-          <span class="choco-choice-name">${g.name}</span>
-        </div>
+      <div class="flavor-today-item">
+        ${hasImg
+          ? `<img class="flavor-thumb" src="${f.imageUrl}" alt="${f.name}">`
+          : `<span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>`
+        }
+        <span class="flavor-today-name">${f.name}</span>
       </div>
     `;
   }).join('');
-
-  // Bind click to toggle selection
-  container.querySelectorAll('.flavor-select-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const id = item.dataset.id;
-      const idx = orderState.selectedFlavors.indexOf(id);
-      const maxFlavors = orderState.gelatoSize ? orderState.gelatoSize.balls : 1;
-
-      if (idx !== -1) {
-        // Deselect
-        orderState.selectedFlavors.splice(idx, 1);
-      } else {
-        // Select if under limit
-        if (orderState.selectedFlavors.length >= maxFlavors) return;
-        orderState.selectedFlavors.push(id);
-      }
-      updateFlavorSelection();
-    });
-  });
-
-  updateFlavorSelection();
-}
-
-function getFlavorTotalCount() {
-  return orderState.selectedFlavors.length;
-}
-
-function updateFlavorSelection() {
-  const container = document.getElementById('gelatoFlavors');
-  const maxFlavors = orderState.gelatoSize ? orderState.gelatoSize.balls : 1;
-  const totalSelected = getFlavorTotalCount();
-  const countEl = document.getElementById('flavorCount');
-  countEl.textContent = `(${totalSelected}/${maxFlavors})`;
-  const isFull = totalSelected >= maxFlavors;
-
-  container.querySelectorAll('.flavor-select-item').forEach(item => {
-    const id = item.dataset.id;
-    const isSelected = orderState.selectedFlavors.includes(id);
-
-    item.classList.toggle('selected', isSelected);
-    // Disable unselected items when full
-    item.classList.toggle('disabled', isFull && !isSelected);
-  });
-}
-
-// Toppings
-// Cache local dos toppings para uso no order builder
-let _toppingsCache = [];
-
-async function renderToppings() {
-  const container = document.getElementById('toppingsGrid');
-  _toppingsCache = await getToppings();
-
-  container.innerHTML = _toppingsCache.map(t => `
-    <div class="topping-item" data-id="${t.id}">
-      ${t.name} (+${formatPrice(t.price)})
-    </div>
-  `).join('');
-
-  container.querySelectorAll('.topping-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const id = item.dataset.id;
-      if (orderState.selectedToppings.includes(id)) {
-        orderState.selectedToppings = orderState.selectedToppings.filter(t => t !== id);
-      } else {
-        orderState.selectedToppings.push(id);
-      }
-      item.classList.toggle('selected');
-    });
-  });
 }
 
 // Chocolate Choices (com quantidade por chocolate - sem limite)
@@ -435,33 +403,72 @@ function updateChocoSelection() {
   });
 }
 
-// Diversos Choices (sem limite minimo/maximo)
+// Diversos Choices (sem limite minimo/maximo, agrupados por categoria)
 async function renderDiversosChoices() {
   const container = document.getElementById('diversosChoices');
   const diversos = await getProducts('diversos');
+  const categories = await getCategories('diversos');
 
-  container.innerHTML = diversos.map(d => {
-    const hasImg = d.imageUrl && d.imageUrl.length > 0;
-    const hue = hashStringToHue(d.name);
-    return `
-      <div class="choco-choice-item" data-id="${d.id}">
-        <div class="choco-choice-info">
-          ${hasImg
-            ? `<img class="flavor-thumb" src="${d.imageUrl}" alt="${d.name}">`
-            : `<span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>`
-          }
-          <span class="choco-choice-name">${d.name}</span>
-          <span class="choco-choice-price">${formatPrice(d.price)}/un</span>
-        </div>
-        <div class="choco-qty-control">
-          <button type="button" class="choco-qty-btn diversos-qty-minus" data-id="${d.id}">-</button>
-          <span class="choco-qty-value" data-id="${d.id}">0</span>
-          <button type="button" class="choco-qty-btn diversos-qty-plus" data-id="${d.id}">+</button>
-        </div>
+  // Group by category
+  const grouped = {};
+  const uncategorized = [];
+
+  diversos.forEach(d => {
+    if (d.category) {
+      if (!grouped[d.category]) grouped[d.category] = [];
+      grouped[d.category].push(d);
+    } else {
+      uncategorized.push(d);
+    }
+  });
+
+  let html = '';
+
+  // Render categorized items
+  categories.forEach(cat => {
+    const items = grouped[cat.id] || [];
+    if (items.length === 0) return;
+    html += `<div class="diversos-category-label">${cat.name}</div>`;
+    html += items.map(d => renderDiversoItem(d)).join('');
+  });
+
+  // Render uncategorized items
+  if (uncategorized.length > 0) {
+    if (categories.length > 0 && Object.keys(grouped).length > 0) {
+      html += `<div class="diversos-category-label">Outros</div>`;
+    }
+    html += uncategorized.map(d => renderDiversoItem(d)).join('');
+  }
+
+  container.innerHTML = html;
+
+  bindDiversosQtyEvents(container);
+  updateDiversosSelection();
+}
+
+function renderDiversoItem(d) {
+  const hasImg = d.imageUrl && d.imageUrl.length > 0;
+  const hue = hashStringToHue(d.name);
+  return `
+    <div class="choco-choice-item" data-id="${d.id}">
+      <div class="choco-choice-info">
+        ${hasImg
+          ? `<img class="flavor-thumb" src="${d.imageUrl}" alt="${d.name}">`
+          : `<span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>`
+        }
+        <span class="choco-choice-name">${d.name}</span>
+        <span class="choco-choice-price">${formatPrice(d.price)}/un</span>
       </div>
-    `;
-  }).join('');
+      <div class="choco-qty-control">
+        <button type="button" class="choco-qty-btn diversos-qty-minus" data-id="${d.id}">-</button>
+        <span class="choco-qty-value" data-id="${d.id}">0</span>
+        <button type="button" class="choco-qty-btn diversos-qty-plus" data-id="${d.id}">+</button>
+      </div>
+    </div>
+  `;
+}
 
+function bindDiversosQtyEvents(container) {
   container.querySelectorAll('.diversos-qty-plus').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -516,51 +523,19 @@ async function addGelatoToOrder() {
     showToast('Selecione um tamanho.', 'error');
     return;
   }
-  const totalSelected = getFlavorTotalCount();
-  if (totalSelected === 0) {
-    showToast('Selecione pelo menos um sabor.', 'error');
-    return;
-  }
-  if (totalSelected !== orderState.gelatoSize.balls) {
-    showToast(`Selecione exatamente ${orderState.gelatoSize.balls} sabor${orderState.gelatoSize.balls > 1 ? 'es' : ''} para o tamanho ${orderState.gelatoSize.name}. Voce selecionou ${totalSelected}.`, 'error');
-    return;
-  }
 
-  const gelatos = await getProducts('gelato');
-  const flavorDescParts = orderState.selectedFlavors.map(id => {
-    const g = gelatos.find(p => String(p.id) === String(id));
-    return g ? g.name : id;
-  });
-
-  const toppingNames = orderState.selectedToppings.map(id => {
-    const t = _toppingsCache.find(tp => String(tp.id) === String(id));
-    return t ? t.name : id;
-  });
-
-  const toppingCost = orderState.selectedToppings.reduce((sum, id) => {
-    const t = _toppingsCache.find(tp => String(tp.id) === String(id));
-    return sum + (t ? t.price : 0);
-  }, 0);
-
-  const itemPrice = (orderState.gelatoSize.price + toppingCost) * orderState.gelatoQty;
+  const itemPrice = orderState.gelatoSize.price * orderState.gelatoQty;
 
   orderState.items.push({
     id: 'oi' + Date.now(),
     type: 'gelato',
     size: orderState.gelatoSize.name,
-    flavors: flavorDescParts,
-    toppings: toppingNames,
     qty: orderState.gelatoQty,
     price: itemPrice,
-    description: `Gelato ${orderState.gelatoSize.name} - ${flavorDescParts.join(', ')}${toppingNames.length > 0 ? ' + ' + toppingNames.join(', ') : ''} (x${orderState.gelatoQty})`
+    description: `Gelato ${orderState.gelatoSize.name} (sabor a combinar via WhatsApp)`
   });
 
-  // Reset gelato selections
-  orderState.selectedFlavors = [];
-  orderState.selectedToppings = [];
   orderState.gelatoQty = 1;
-  updateFlavorSelection();
-  document.querySelectorAll('#toppingsGrid .topping-item').forEach(i => i.classList.remove('selected'));
 
   updateOrderSummary();
   showToast('Gelato adicionado ao pedido!', 'success');
@@ -870,15 +845,11 @@ function sendToWhatsApp() {
 
 function resetOrder() {
   orderState.items = [];
-  orderState.selectedFlavors = [];
-  orderState.selectedToppings = [];
   orderState.selectedChocos = {};
   orderState.selectedDiversos = {};
   orderState.gelatoQty = 1;
-  updateFlavorSelection();
   updateChocoSelection();
   updateDiversosSelection();
-  document.querySelectorAll('#toppingsGrid .topping-item').forEach(i => i.classList.remove('selected'));
   updateOrderSummary();
 }
 

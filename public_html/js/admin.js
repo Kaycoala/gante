@@ -58,6 +58,7 @@ async function initDashboard() {
   await renderChocolateTable();
   await renderDiversosTable();
   await renderCategoryTables();
+  await renderFlavorsOfDay();
   initProductModal();
   initDiversosModal();
   initCategoryModal();
@@ -65,6 +66,7 @@ async function initDashboard() {
   initSearch();
   initAddButtons();
   initImageUpload();
+  initFlavorsOfDayBtn();
 }
 
 // ---- Sidebar Navigation ----
@@ -226,6 +228,7 @@ async function renderChocolateTable(search = '') {
 async function renderDiversosTable(search = '') {
   const tbody = document.getElementById('diversosTableBody');
   let products = await getProducts('diversos');
+  const categories = await getCategories('diversos');
 
   if (search) {
     const s = search.toLowerCase();
@@ -233,6 +236,7 @@ async function renderDiversosTable(search = '') {
   }
 
   tbody.innerHTML = products.map(p => {
+    const cat = categories.find(c => c.id === p.category);
     const hasImg = p.imageUrl && p.imageUrl.length > 0;
     const hue = hashStringToHue(p.name);
     return `
@@ -246,7 +250,7 @@ async function renderDiversosTable(search = '') {
             <strong>${p.name}</strong>
           </div>
         </td>
-        <td style="max-width:300px; font-size:0.85rem; color:rgba(15,59,46,0.6);">${p.description || ''}</td>
+        <td><span class="category-pill">${cat ? cat.name : (p.category ? p.category : 'Sem categoria')}</span></td>
         <td style="font-weight:600;">${formatPrice(p.price)}</td>
         <td class="actions">
           <button class="btn-edit" onclick="editDiversos('${p.id}')">Editar</button>
@@ -269,6 +273,7 @@ function editDiversos(id) {
 async function renderCategoryTables() {
   await renderCatTable('gelato', 'gelatoCatBody');
   await renderCatTable('chocolate', 'chocoCatBody');
+  await renderCatTable('diversos', 'diversosCatBody');
 }
 
 async function renderCatTable(type, bodyId) {
@@ -315,6 +320,7 @@ function initAddButtons() {
   document.getElementById('addDiversosBtn').addEventListener('click', () => openDiversosModal());
   document.getElementById('addGelatoCatBtn').addEventListener('click', () => openCategoryModal('gelato'));
   document.getElementById('addChocoCatBtn').addEventListener('click', () => openCategoryModal('chocolate'));
+  document.getElementById('addDiversosCatBtn').addEventListener('click', () => openCategoryModal('diversos'));
 }
 
 // ---- Product Modal ----
@@ -446,6 +452,7 @@ function initDiversosModal() {
       name: document.getElementById('divName').value.trim(),
       description: document.getElementById('divDescription').value.trim(),
       price: parseFloat(document.getElementById('divPrice').value),
+      category: document.getElementById('divCategory').value || null,
       type: 'diversos',
       imageUrl: imageUrl,
     };
@@ -478,6 +485,12 @@ async function openDiversosModal(productId = null) {
   const modal = document.getElementById('diversosModal');
   const title = document.getElementById('diversosModalTitle');
   const form = document.getElementById('diversosForm');
+  const categorySelect = document.getElementById('divCategory');
+
+  // Populate categories
+  const categories = await getCategories('diversos');
+  categorySelect.innerHTML = '<option value="">Sem categoria</option>' +
+    categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 
   if (productId) {
     const product = await getProductById('diversos', productId);
@@ -487,6 +500,7 @@ async function openDiversosModal(productId = null) {
     document.getElementById('divName').value = product.name;
     document.getElementById('divDescription').value = product.description;
     document.getElementById('divPrice').value = product.price;
+    document.getElementById('divCategory').value = product.category || '';
     if (product.imageUrl) {
       const filename = product.imageUrl.replace(/^(https?:\/\/[^/]+\/)?(images\/produtos\/)?/, '');
       document.getElementById('divImageFile').value = filename;
@@ -555,7 +569,7 @@ async function openCategoryModal(type, catId = null) {
     document.getElementById('catEditId').value = cat.id;
     document.getElementById('catName').value = cat.name;
   } else {
-    title.textContent = 'Nova Categoria (' + (type === 'gelato' ? 'Gelato' : 'Chocolate') + ')';
+    title.textContent = 'Nova Categoria (' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : 'Diversos') + ')';
     document.getElementById('catEditId').value = '';
     document.getElementById('catName').value = '';
   }
@@ -617,12 +631,75 @@ function closeModal(id) {
   document.body.style.overflow = '';
 }
 
+// ---- Flavors of the Day ----
+let _selectedFlavorsOfDay = [];
+
+async function renderFlavorsOfDay() {
+  const grid = document.getElementById('flavorsOfDayGrid');
+  const allGelatos = await getProducts('gelato');
+  let currentFlavors = [];
+
+  try {
+    currentFlavors = await getFlavorsOfTheDay();
+  } catch (e) {
+    // silently fail
+  }
+
+  const currentIds = currentFlavors.map(f => String(f.id));
+  _selectedFlavorsOfDay = [...currentIds];
+
+  grid.innerHTML = allGelatos.map(g => {
+    const isSelected = currentIds.includes(String(g.id));
+    const hasImg = g.imageUrl && g.imageUrl.length > 0;
+    const hue = hashStringToHue(g.name);
+    return `
+      <div class="admin-flavor-day-item ${isSelected ? 'selected' : ''}" data-id="${g.id}">
+        <div class="admin-flavor-day-check"></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          ${hasImg
+            ? `<img class="flavor-thumb" src="${g.imageUrl}" alt="${g.name}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">`
+            : `<span style="width:24px;height:24px;border-radius:50%;background:hsl(${hue},25%,78%);display:inline-block;flex-shrink:0;"></span>`
+          }
+          <span style="font-weight:500;">${g.name}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Bind click
+  grid.querySelectorAll('.admin-flavor-day-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const id = item.dataset.id;
+      const idx = _selectedFlavorsOfDay.indexOf(id);
+      if (idx !== -1) {
+        _selectedFlavorsOfDay.splice(idx, 1);
+        item.classList.remove('selected');
+      } else {
+        _selectedFlavorsOfDay.push(id);
+        item.classList.add('selected');
+      }
+    });
+  });
+}
+
+function initFlavorsOfDayBtn() {
+  document.getElementById('saveFlavorsOfDayBtn').addEventListener('click', async () => {
+    const result = await setFlavorsOfTheDay(_selectedFlavorsOfDay);
+    if (result) {
+      showToast('Sabores do dia salvos com sucesso!');
+    } else {
+      showToast('ERRO: Nao foi possivel salvar os sabores do dia.', 'error');
+    }
+  });
+}
+
 // ---- Refresh ----
 async function refreshTables() {
   await renderGelatoTable(document.getElementById('gelatoSearch').value);
   await renderChocolateTable(document.getElementById('chocolateSearch').value);
   await renderDiversosTable(document.getElementById('diversosSearch').value);
   await renderCategoryTables();
+  await renderFlavorsOfDay();
 }
 
 // ---- Toast ----
