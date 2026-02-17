@@ -214,7 +214,6 @@ let orderState = {
 async function initOrderBuilder() {
   initOrderTabs();
   await renderGelatoSizes();
-  await renderGelatoFlavors();
   await renderToppings();
   await renderChocolateChoices();
   await renderDiversosChoices();
@@ -252,92 +251,67 @@ async function renderGelatoSizes() {
   const container = document.getElementById('gelatoSizes');
   _gelatoSizesCache = await getGelatoSizes();
 
+  // Mapa de imagens dos copos por tamanho (inserir caminhos reais aqui)
+  const cupImages = {
+    // Exemplos: ajuste os IDs e caminhos conforme seus tamanhos cadastrados no banco
+    // '1': 'images/produtos/copo-pequeno.png',
+    // '2': 'images/produtos/copo-medio.png',
+    // '3': 'images/produtos/copo-grande.png',
+  };
+
   container.innerHTML = _gelatoSizesCache.map((s, i) => `
     <div class="size-option ${i === 0 ? 'selected' : ''}" data-size="${s.id}">
       <strong>${s.name}</strong>
-      <small>${s.balls} sabor${s.balls > 1 ? 'es' : ''}</small>
       <span class="size-price">${formatPrice(s.price)}</span>
     </div>
   `).join('');
 
   orderState.gelatoSize = _gelatoSizesCache[0] || null;
 
+  // Mostra a imagem do primeiro tamanho (se existir)
+  showCupImage(orderState.gelatoSize, cupImages);
+
   container.querySelectorAll('.size-option').forEach(opt => {
     opt.addEventListener('click', () => {
       container.querySelectorAll('.size-option').forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
       orderState.gelatoSize = _gelatoSizesCache.find(s => String(s.id) === opt.dataset.size);
-      orderState.selectedFlavors = [];
-      updateFlavorSelection();
+      showCupImage(orderState.gelatoSize, cupImages);
     });
   });
 }
 
-// Gelato Flavors (selecao simples - apenas toggle)
-async function renderGelatoFlavors() {
-  const container = document.getElementById('gelatoFlavors');
-  const gelatos = await getProducts('gelato');
+// Mostra imagem do copo com animacao
+function showCupImage(size, cupImages) {
+  const preview = document.getElementById('gelatoCupPreview');
+  const img = document.getElementById('gelatoCupImage');
+  if (!preview || !img) return;
 
-  container.innerHTML = gelatos.map(g => {
-    const hasImg = g.imageUrl && g.imageUrl.length > 0;
-    const hue = hashStringToHue(g.name);
-    return `
-      <div class="flavor-select-item" data-id="${g.id}">
-        <div class="flavor-select-check"></div>
-        <div class="choco-choice-info">
-          ${hasImg
-            ? `<img class="flavor-thumb" src="${g.imageUrl}" alt="${g.name}">`
-            : `<span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>`
-          }
-          <span class="choco-choice-name">${g.name}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
+  // Procura imagem pelo ID ou pelo nome (slug)
+  const sizeId = size ? String(size.id) : null;
+  const sizeName = size ? size.name.toLowerCase().replace(/\s+/g, '-') : null;
+  const imageSrc = (sizeId && cupImages[sizeId])
+    || (sizeName && cupImages[sizeName])
+    || (size && size.image_url)
+    || null;
 
-  // Bind click to toggle selection
-  container.querySelectorAll('.flavor-select-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const id = item.dataset.id;
-      const idx = orderState.selectedFlavors.indexOf(id);
-      const maxFlavors = orderState.gelatoSize ? orderState.gelatoSize.balls : 1;
+  if (!imageSrc) {
+    preview.classList.remove('visible');
+    return;
+  }
 
-      if (idx !== -1) {
-        // Deselect
-        orderState.selectedFlavors.splice(idx, 1);
-      } else {
-        // Select if under limit
-        if (orderState.selectedFlavors.length >= maxFlavors) return;
-        orderState.selectedFlavors.push(id);
-      }
-      updateFlavorSelection();
-    });
-  });
-
-  updateFlavorSelection();
+  // Animacao: esconde, troca imagem, mostra
+  preview.classList.remove('visible');
+  setTimeout(() => {
+    img.src = imageSrc;
+    img.alt = `Copo ${size.name}`;
+    img.onload = () => {
+      preview.classList.add('visible');
+    };
+  }, 200);
 }
 
-function getFlavorTotalCount() {
-  return orderState.selectedFlavors.length;
-}
 
-function updateFlavorSelection() {
-  const container = document.getElementById('gelatoFlavors');
-  const maxFlavors = orderState.gelatoSize ? orderState.gelatoSize.balls : 1;
-  const totalSelected = getFlavorTotalCount();
-  const countEl = document.getElementById('flavorCount');
-  countEl.textContent = `(${totalSelected}/${maxFlavors})`;
-  const isFull = totalSelected >= maxFlavors;
-
-  container.querySelectorAll('.flavor-select-item').forEach(item => {
-    const id = item.dataset.id;
-    const isSelected = orderState.selectedFlavors.includes(id);
-
-    item.classList.toggle('selected', isSelected);
-    // Disable unselected items when full
-    item.classList.toggle('disabled', isFull && !isSelected);
-  });
-}
 
 // Toppings
 // Cache local dos toppings para uso no order builder
