@@ -402,7 +402,7 @@ async function openProductModal(type, productId = null) {
   if (productId) {
     const product = await getProductById(type, productId);
     if (!product) return;
-    title.textContent = 'Editar ' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : 'Produto');
+    title.textContent = 'Editar ' + getDisplayTypeName(type);
     document.getElementById('prodEditId').value = product.id;
     document.getElementById('prodName').value = product.name;
     document.getElementById('prodDescription').value = product.description;
@@ -425,7 +425,7 @@ async function openProductModal(type, productId = null) {
       };
     }
   } else {
-    title.textContent = 'Novo ' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : 'Produto');
+    title.textContent = 'Novo ' + getDisplayTypeName(type);
     document.getElementById('prodEditId').value = '';
     form.reset();
   }
@@ -540,6 +540,18 @@ function initCategoryModal() {
     const type = document.getElementById('catEditType').value;
     const name = document.getElementById('catName').value.trim();
 
+    if (!name) {
+      showToast('Digite o nome da categoria.', 'error');
+      return;
+    }
+
+    if (!type) {
+      showToast('ERRO: Tipo de categoria nao definido.', 'error');
+      return;
+    }
+
+    console.log('[Gante] Salvando categoria - tipo:', type, '| nome:', name, '| editId:', editId);
+
     let result;
     if (editId) {
       result = await updateCategory(type, editId, { name });
@@ -554,7 +566,7 @@ function initCategoryModal() {
       if (result) {
         showToast('Categoria adicionada com sucesso!');
       } else {
-        showToast('ERRO: Nao foi possivel adicionar a categoria. Verifique a conexao.', 'error');
+        showToast('ERRO: Nao foi possivel adicionar a categoria. Verifique a conexao com o banco.', 'error');
         return;
       }
     }
@@ -564,19 +576,30 @@ function initCategoryModal() {
   });
 }
 
+// Mapeia o tipo interno para nome de exibicao
+function getDisplayTypeName(type) {
+  switch (type) {
+    case 'gelato': return 'Gelato';
+    case 'chocolate': return 'Chocolate';
+    case 'diversos': return 'Cafeteria';
+    default: return type;
+  }
+}
+
 async function openCategoryModal(type, catId = null) {
   const title = document.getElementById('categoryModalTitle');
   document.getElementById('catEditType').value = type;
+  const displayName = getDisplayTypeName(type);
 
   if (catId) {
     const categories = await getCategories(type);
     const cat = categories.find(c => c.id === catId);
     if (!cat) return;
-    title.textContent = 'Editar Categoria';
+    title.textContent = 'Editar Categoria (' + displayName + ')';
     document.getElementById('catEditId').value = cat.id;
     document.getElementById('catName').value = cat.name;
   } else {
-    title.textContent = 'Nova Categoria (' + (type === 'gelato' ? 'Gelato' : type === 'chocolate' ? 'Chocolate' : 'Cafeteria') + ')';
+    title.textContent = 'Nova Categoria (' + displayName + ')';
     document.getElementById('catEditId').value = '';
     document.getElementById('catName').value = '';
   }

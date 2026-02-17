@@ -204,11 +204,17 @@ async function deleteProduct(type, id) {
 async function getCategories(type) {
   if (await checkApiAvailability()) {
     try {
-      const data = await apiFetch(`${API_BASE}/categories.php?type=${encodeURIComponent(type)}`);
-      return (data || []).map(mapCategoryFromDB);
+      const url = `${API_BASE}/categories.php?type=${encodeURIComponent(type)}`;
+      console.log('[Gante] getCategories buscando:', url);
+      const data = await apiFetch(url);
+      const result = (data || []).map(mapCategoryFromDB);
+      console.log('[Gante] getCategories resultado para', type, ':', result.length, 'categorias');
+      return result;
     } catch (err) {
-      console.error('[Gante] Erro API getCategories:', err);
+      console.error('[Gante] Erro API getCategories para tipo "' + type + '":', err);
     }
+  } else {
+    console.warn('[Gante] API indisponivel para getCategories tipo:', type);
   }
   return [];
 }
@@ -216,13 +222,16 @@ async function getCategories(type) {
 async function addCategory(type, category) {
   try {
     const body = { name: category.name, type: type };
+    console.log('[Gante] addCategory enviando:', JSON.stringify(body));
     const data = await apiFetch(`${API_BASE}/categories.php`, {
       method: 'POST',
       body: JSON.stringify(body),
     });
+    console.log('[Gante] addCategory resposta:', JSON.stringify(data));
     return mapCategoryFromDB(data);
   } catch (err) {
     console.error('[Gante] Erro ao adicionar categoria:', err);
+    console.error('[Gante] Tipo:', type, '| Nome:', category.name);
     return null;
   }
 }

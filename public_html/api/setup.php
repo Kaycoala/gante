@@ -27,11 +27,19 @@ try {
         CREATE TABLE IF NOT EXISTS categories (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
-            type ENUM('gelato', 'chocolate') NOT NULL,
+            type ENUM('gelato', 'chocolate', 'diversos') NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ");
     $results[] = 'Tabela "categories" criada.';
+
+    // Garantir que o ENUM inclui 'diversos' (caso a tabela ja exista)
+    try {
+        $db->exec("ALTER TABLE categories MODIFY COLUMN type ENUM('gelato', 'chocolate', 'diversos') NOT NULL");
+        $results[] = 'Coluna "type" da tabela categories atualizada para incluir "diversos".';
+    } catch (PDOException $e) {
+        // Ignorar se ja esta correto
+    }
 
     $db->exec("
         CREATE TABLE IF NOT EXISTS products (
@@ -104,10 +112,15 @@ try {
         ['name' => 'Sazonais',             'type' => 'chocolate'],
     ];
 
-    foreach (array_merge($gelatoCats, $chocoCats) as $cat) {
+    $diversosCats = [
+        ['name' => 'Bebidas',    'type' => 'diversos'],
+        ['name' => 'Acompanhamentos', 'type' => 'diversos'],
+    ];
+
+    foreach (array_merge($gelatoCats, $chocoCats, $diversosCats) as $cat) {
         $catStmt->execute($cat);
     }
-    $results[] = '7 categorias inseridas.';
+    $results[] = '9 categorias inseridas (gelato, chocolate e cafeteria).';
 
     // Mapear IDs de categorias para uso nos produtos
     // Precisamos mapear os nomes das categorias para os slug IDs usados no frontend
@@ -207,19 +220,23 @@ try {
     }
     $results[] = count($chocolates) . ' chocolates inseridos.';
 
-    // ========== SEED: PRODUCTS (DIVERSOS) ==========
+    // ========== SEED: PRODUCTS (DIVERSOS / CAFETERIA) ==========
+
+    // Mapear categorias de diversos
+    $diversosBebidaId = $catMap['diversos:Bebidas'] ?? null;
+    $diversosAcompId  = $catMap['diversos:Acompanhamentos'] ?? null;
 
     $diversos = [
-        ['Casquinha Simples',  'Casquinha crocante para acompanhar seu gelato.',            3.00],
-        ['Casquinha Coberta',  'Casquinha com cobertura de chocolate belga.',                5.00],
-        ['Agua Mineral',       'Agua mineral sem gas 500ml.',                                4.00],
-        ['Agua com Gas',       'Agua mineral com gas 500ml.',                                5.00],
-        ['Suco Natural',       'Suco natural da fruta do dia 300ml.',                       10.00],
-        ['Cafe Espresso',      'Cafe espresso curto ou longo.',                              6.00],
-        ['Cappuccino',         'Cappuccino italiano com espuma cremosa.',                   10.00],
-        ['Milkshake',          'Milkshake cremoso com o sabor de gelato da sua escolha.',   18.00],
-        ['Affogato',           'Gelato de fior di latte com shot de cafe espresso.',        16.00],
-        ['Brownie',            'Brownie artesanal de chocolate belga.',                     12.00],
+        ['Casquinha Simples',  'Casquinha crocante para acompanhar seu gelato.',            3.00, $diversosAcompId],
+        ['Casquinha Coberta',  'Casquinha com cobertura de chocolate belga.',                5.00, $diversosAcompId],
+        ['Agua Mineral',       'Agua mineral sem gas 500ml.',                                4.00, $diversosBebidaId],
+        ['Agua com Gas',       'Agua mineral com gas 500ml.',                                5.00, $diversosBebidaId],
+        ['Suco Natural',       'Suco natural da fruta do dia 300ml.',                       10.00, $diversosBebidaId],
+        ['Cafe Espresso',      'Cafe espresso curto ou longo.',                              6.00, $diversosBebidaId],
+        ['Cappuccino',         'Cappuccino italiano com espuma cremosa.',                   10.00, $diversosBebidaId],
+        ['Milkshake',          'Milkshake cremoso com o sabor de gelato da sua escolha.',   18.00, $diversosBebidaId],
+        ['Affogato',           'Gelato de fior di latte com shot de cafe espresso.',        16.00, $diversosBebidaId],
+        ['Brownie',            'Brownie artesanal de chocolate belga.',                     12.00, $diversosAcompId],
     ];
 
     foreach ($diversos as $d) {
@@ -227,12 +244,12 @@ try {
             ':name'        => $d[0],
             ':description' => $d[1],
             ':price'       => $d[2],
-            ':category'    => null,
+            ':category'    => $d[3],
             ':type'        => 'diversos',
             ':image_url'   => '',
         ]);
     }
-    $results[] = count($diversos) . ' diversos inseridos.';
+    $results[] = count($diversos) . ' itens de cafeteria inseridos.';
 
     // ========== SEED: GELATO SIZES ==========
 

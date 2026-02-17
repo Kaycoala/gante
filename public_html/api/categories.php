@@ -29,7 +29,7 @@ function handleGet() {
     $db = getDB();
 
     if (empty($_GET['type'])) {
-        jsonError('Parametro "type" e obrigatorio (gelato, chocolate).');
+        jsonError('Parametro "type" e obrigatorio (gelato, chocolate, diversos).');
         return;
     }
 
