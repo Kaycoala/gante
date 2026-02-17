@@ -24,11 +24,11 @@ switch ($method) {
         jsonError('Metodo nao permitido.', 405);
 }
 
-// ---- GET: Listar ou buscar produtos ----
+// ---- GET: Listar produtos por tipo, ou buscar por ID ----
 function handleGet() {
     $db = getDB();
 
-    // Buscar por ID
+    // Busca por ID unico
     if (!empty($_GET['id'])) {
         $stmt = $db->prepare('SELECT * FROM products WHERE id = :id LIMIT 1');
         $stmt->execute([':id' => $_GET['id']]);
@@ -41,18 +41,18 @@ function handleGet() {
         return;
     }
 
-    // Listar por tipo (obrigatorio)
+    // Listagem por tipo
     if (empty($_GET['type'])) {
         jsonError('Parametro "type" e obrigatorio (gelato, chocolate, diversos).');
         return;
     }
 
     $type = $_GET['type'];
-    $category = $_GET['category'] ?? null;
 
-    if ($category && $category !== 'todos') {
+    // Filtro opcional por categoria
+    if (!empty($_GET['category']) && $_GET['category'] !== 'todos') {
         $stmt = $db->prepare('SELECT * FROM products WHERE type = :type AND category = :category ORDER BY created_at ASC');
-        $stmt->execute([':type' => $type, ':category' => $category]);
+        $stmt->execute([':type' => $type, ':category' => $_GET['category']]);
     } else {
         $stmt = $db->prepare('SELECT * FROM products WHERE type = :type ORDER BY created_at ASC');
         $stmt->execute([':type' => $type]);
@@ -75,6 +75,7 @@ function handlePost() {
         INSERT INTO products (name, description, price, category, type, image_url)
         VALUES (:name, :description, :price, :category, :type, :image_url)
     ');
+
     $stmt->execute([
         ':name'        => $body['name'],
         ':description' => $body['description'] ?? '',
@@ -86,7 +87,6 @@ function handlePost() {
 
     $id = $db->lastInsertId();
 
-    // Retornar o produto criado
     $stmt = $db->prepare('SELECT * FROM products WHERE id = :id');
     $stmt->execute([':id' => $id]);
     jsonResponse($stmt->fetch(), 201);
@@ -102,6 +102,7 @@ function handlePut() {
         return;
     }
 
+    // Construir UPDATE dinamico (so campos presentes)
     $fields = [];
     $params = [':id' => $body['id']];
 
@@ -122,7 +123,7 @@ function handlePut() {
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
 
-    // Retornar o produto atualizado
+    // Retornar produto atualizado
     $stmt = $db->prepare('SELECT * FROM products WHERE id = :id');
     $stmt->execute([':id' => $body['id']]);
     $row = $stmt->fetch();

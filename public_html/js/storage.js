@@ -1,35 +1,46 @@
 // ============================================
-// GANTE — CRUD Helpers (PHP/MySQL API)
+// GANTE — CRUD Helpers (PHP/MySQL API + Fallback)
 // ============================================
 //
-// Este arquivo conecta ao backend PHP para ler e gravar
-// produtos e categorias no MySQL. Todas as funcoes sao async.
+// Este arquivo conecta ao backend PHP/MySQL na Hostinger.
+// Se a API nao estiver disponivel (ex: ambiente local sem PHP),
+// faz fallback automatico para os dados estaticos do data.js.
 //
-// ENDPOINTS:
+// ENDPOINTS (quando PHP esta ativo):
 //   - /api/products.php    (GET, POST, PUT, DELETE)
 //   - /api/categories.php  (GET, POST, PUT, DELETE)
 //   - /api/extras.php      (GET - gelato_sizes, chocolate_boxes, toppings)
 
 const API_BASE = '/api';
 
-// ---- Cache local para evitar chamadas repetidas ----
-let _cache = {
-  products: null,
-  categories: null,
-  gelatoSizes: null,
-  chocolateBoxes: null,
-  toppings: null,
-};
+// Flag: a API PHP esta disponivel?
+let _apiAvailable = null; // null = nao testado, true/false
 
-function invalidateCache(key) {
-  if (key) {
-    _cache[key] = null;
-  } else {
-    _cache = { products: null, categories: null, gelatoSizes: null, chocolateBoxes: null, toppings: null };
+// ---- Testar se a API PHP esta online ----
+async function checkApiAvailability() {
+  if (_apiAvailable !== null) return _apiAvailable;
+  try {
+    const resp = await fetch(`${API_BASE}/extras.php?table=gelato_sizes`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+    });
+    // Se retornar JSON valido, API esta online
+    if (resp.ok) {
+      const data = await resp.json();
+      if (Array.isArray(data)) {
+        _apiAvailable = true;
+        return true;
+      }
+    }
+    _apiAvailable = false;
+    return false;
+  } catch (e) {
+    _apiAvailable = false;
+    return false;
   }
 }
 
-// ---- Helper para fetch ----
+// ---- Helper para fetch com tratamento de erro ----
 async function apiFetch(url, options = {}) {
   const response = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
@@ -44,19 +55,11 @@ async function apiFetch(url, options = {}) {
 
 // ---- Initialization ----
 async function initData() {
-  try {
-    const [gelatos, chocolates, diversos, gelatoCats, chocoCats] = await Promise.all([
-      getProducts('gelato'),
-      getProducts('chocolate'),
-      getProducts('diversos'),
-      getCategories('gelato'),
-      getCategories('chocolate'),
-    ]);
-    console.log('Dados carregados do MySQL com sucesso!');
-    console.log('Gelatos:', gelatos.length, '| Chocolates:', chocolates.length, '| Diversos:', diversos.length);
-    console.log('Categorias gelato:', gelatoCats.length, '| Categorias chocolate:', chocoCats.length);
-  } catch (err) {
-    console.error('Erro ao carregar dados do MySQL:', err);
+  const online = await checkApiAvailability();
+  if (online) {
+    console.log('API PHP/MySQL disponivel. Dados serao carregados do banco.');
+  } else {
+    console.log('API PHP nao disponivel. Usando dados estaticos do data.js como fallback.');
   }
 }
 
@@ -65,95 +68,113 @@ async function initData() {
 // ============================================
 
 async function getProducts(type) {
-  try {
-    const data = await apiFetch(`${API_BASE}/products.php?type=${encodeURIComponent(type)}`);
-    return (data || []).map(mapProductFromDB);
-  } catch (err) {
-    console.error('Erro ao buscar produtos:', err);
-    return [];
+  if (await checkApiAvailability()) {
+    try {
+      const data = await apiFetch(`${API_BASE}/products.php?type=${encodeURIComponent(type)}`);
+      return (data || []).map(mapProductFromDB);
+    } catch (err) {
+      console.error('Erro API getProducts, usando fallback:', err);
+    }
   }
+  // Fallback: dados estaticos do data.js
+  return getFallbackProducts(type);
 }
 
 async function getProductsByCategory(type, categoryId) {
-  try {
-    let url = `${API_BASE}/products.php?type=${encodeURIComponent(type)}`;
-    if (categoryId && categoryId !== 'todos') {
-      url += `&category=${encodeURIComponent(categoryId)}`;
+  if (await checkApiAvailability()) {
+    try {
+      let url = `${API_BASE}/products.php?type=${encodeURIComponent(type)}`;
+      if (categoryId && categoryId !== 'todos') {
+        url += `&category=${encodeURIComponent(categoryId)}`;
+      }
+      const data = await apiFetch(url);
+      return (data || []).map(mapProductFromDB);
+    } catch (err) {
+      console.error('Erro API getProductsByCategory, usando fallback:', err);
     }
-    const data = await apiFetch(url);
-    return (data || []).map(mapProductFromDB);
-  } catch (err) {
-    console.error('Erro ao buscar produtos por categoria:', err);
-    return [];
   }
+  // Fallback
+  const products = getFallbackProducts(type);
+  if (!categoryId || categoryId === 'todos') return products;
+  return products.filter(p => p.category === categoryId);
 }
 
 async function getProductById(type, id) {
-  try {
-    const data = await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`);
-    return data ? mapProductFromDB(data) : null;
-  } catch (err) {
-    console.error('Erro ao buscar produto:', err);
-    return null;
+  if (await checkApiAvailability()) {
+    try {
+      const data = await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`);
+      return data ? mapProductFromDB(data) : null;
+    } catch (err) {
+      console.error('Erro API getProductById, usando fallback:', err);
+    }
   }
+  // Fallback
+  const products = getFallbackProducts(type);
+  return products.find(p => String(p.id) === String(id)) || null;
 }
 
 async function addProduct(type, product) {
-  try {
-    const body = {
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      category: product.category || null,
-      type: type,
-      image_url: product.imageUrl || '',
-    };
-
-    const data = await apiFetch(`${API_BASE}/products.php`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-
-    invalidateCache('products');
-    return mapProductFromDB(data);
-  } catch (err) {
-    console.error('Erro ao adicionar produto:', err);
-    return null;
+  if (await checkApiAvailability()) {
+    try {
+      const body = {
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        category: product.category || null,
+        type: type,
+        image_url: product.imageUrl || '',
+      };
+      const data = await apiFetch(`${API_BASE}/products.php`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      return mapProductFromDB(data);
+    } catch (err) {
+      console.error('Erro ao adicionar produto:', err);
+      return null;
+    }
   }
+  console.warn('API indisponivel. Nao e possivel adicionar produtos sem o backend PHP.');
+  return null;
 }
 
 async function updateProduct(type, id, updates) {
-  try {
-    const body = { id: id };
-    if (updates.name !== undefined) body.name = updates.name;
-    if (updates.description !== undefined) body.description = updates.description;
-    if (updates.price !== undefined) body.price = updates.price;
-    if (updates.category !== undefined) body.category = updates.category;
-    if (updates.type !== undefined) body.type = updates.type;
-    if (updates.imageUrl !== undefined) body.image_url = updates.imageUrl;
+  if (await checkApiAvailability()) {
+    try {
+      const body = { id: id };
+      if (updates.name !== undefined) body.name = updates.name;
+      if (updates.description !== undefined) body.description = updates.description;
+      if (updates.price !== undefined) body.price = updates.price;
+      if (updates.category !== undefined) body.category = updates.category;
+      if (updates.type !== undefined) body.type = updates.type;
+      if (updates.imageUrl !== undefined) body.image_url = updates.imageUrl;
 
-    const data = await apiFetch(`${API_BASE}/products.php`, {
-      method: 'PUT',
-      body: JSON.stringify(body),
-    });
-
-    invalidateCache('products');
-    return mapProductFromDB(data);
-  } catch (err) {
-    console.error('Erro ao atualizar produto:', err);
-    return null;
+      const data = await apiFetch(`${API_BASE}/products.php`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      });
+      return mapProductFromDB(data);
+    } catch (err) {
+      console.error('Erro ao atualizar produto:', err);
+      return null;
+    }
   }
+  console.warn('API indisponivel. Nao e possivel atualizar produtos sem o backend PHP.');
+  return null;
 }
 
 async function deleteProduct(type, id) {
-  try {
-    await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-    });
-    invalidateCache('products');
-  } catch (err) {
-    console.error('Erro ao deletar produto:', err);
+  if (await checkApiAvailability()) {
+    try {
+      await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      return;
+    } catch (err) {
+      console.error('Erro ao deletar produto:', err);
+    }
   }
+  console.warn('API indisponivel. Nao e possivel deletar produtos sem o backend PHP.');
 }
 
 // ============================================
@@ -161,64 +182,66 @@ async function deleteProduct(type, id) {
 // ============================================
 
 async function getCategories(type) {
-  try {
-    const data = await apiFetch(`${API_BASE}/categories.php?type=${encodeURIComponent(type)}`);
-    return (data || []).map(mapCategoryFromDB);
-  } catch (err) {
-    console.error('Erro ao buscar categorias:', err);
-    return [];
+  if (await checkApiAvailability()) {
+    try {
+      const data = await apiFetch(`${API_BASE}/categories.php?type=${encodeURIComponent(type)}`);
+      return (data || []).map(mapCategoryFromDB);
+    } catch (err) {
+      console.error('Erro API getCategories, usando fallback:', err);
+    }
   }
+  // Fallback
+  return getFallbackCategories(type);
 }
 
 async function addCategory(type, category) {
-  try {
-    const body = {
-      name: category.name,
-      type: type,
-    };
-
-    const data = await apiFetch(`${API_BASE}/categories.php`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-
-    invalidateCache('categories');
-    return mapCategoryFromDB(data);
-  } catch (err) {
-    console.error('Erro ao adicionar categoria:', err);
-    return null;
+  if (await checkApiAvailability()) {
+    try {
+      const body = { name: category.name, type: type };
+      const data = await apiFetch(`${API_BASE}/categories.php`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      return mapCategoryFromDB(data);
+    } catch (err) {
+      console.error('Erro ao adicionar categoria:', err);
+      return null;
+    }
   }
+  console.warn('API indisponivel.');
+  return null;
 }
 
 async function updateCategory(type, id, updates) {
-  try {
-    const body = {
-      id: id,
-      name: updates.name,
-    };
-
-    const data = await apiFetch(`${API_BASE}/categories.php`, {
-      method: 'PUT',
-      body: JSON.stringify(body),
-    });
-
-    invalidateCache('categories');
-    return mapCategoryFromDB(data);
-  } catch (err) {
-    console.error('Erro ao atualizar categoria:', err);
-    return null;
+  if (await checkApiAvailability()) {
+    try {
+      const body = { id: id, name: updates.name };
+      const data = await apiFetch(`${API_BASE}/categories.php`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      });
+      return mapCategoryFromDB(data);
+    } catch (err) {
+      console.error('Erro ao atualizar categoria:', err);
+      return null;
+    }
   }
+  console.warn('API indisponivel.');
+  return null;
 }
 
 async function deleteCategory(type, id) {
-  try {
-    await apiFetch(`${API_BASE}/categories.php?id=${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-    });
-    invalidateCache('categories');
-  } catch (err) {
-    console.error('Erro ao deletar categoria:', err);
+  if (await checkApiAvailability()) {
+    try {
+      await apiFetch(`${API_BASE}/categories.php?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      return;
+    } catch (err) {
+      console.error('Erro ao deletar categoria:', err);
+    }
   }
+  console.warn('API indisponivel.');
 }
 
 // ============================================
@@ -226,15 +249,16 @@ async function deleteCategory(type, id) {
 // ============================================
 
 async function getGelatoSizes() {
-  try {
-    if (_cache.gelatoSizes) return _cache.gelatoSizes;
-    const data = await apiFetch(`${API_BASE}/extras.php?table=gelato_sizes`);
-    _cache.gelatoSizes = data || [];
-    return _cache.gelatoSizes;
-  } catch (err) {
-    console.error('Erro ao buscar tamanhos de gelato:', err);
-    return [];
+  if (await checkApiAvailability()) {
+    try {
+      const data = await apiFetch(`${API_BASE}/extras.php?table=gelato_sizes`);
+      return data || [];
+    } catch (err) {
+      console.error('Erro API getGelatoSizes, usando fallback:', err);
+    }
   }
+  // Fallback
+  return typeof GELATO_SIZES !== 'undefined' ? GELATO_SIZES : [];
 }
 
 // ============================================
@@ -242,15 +266,15 @@ async function getGelatoSizes() {
 // ============================================
 
 async function getToppings() {
-  try {
-    if (_cache.toppings) return _cache.toppings;
-    const data = await apiFetch(`${API_BASE}/extras.php?table=toppings`);
-    _cache.toppings = data || [];
-    return _cache.toppings;
-  } catch (err) {
-    console.error('Erro ao buscar coberturas:', err);
-    return [];
+  if (await checkApiAvailability()) {
+    try {
+      const data = await apiFetch(`${API_BASE}/extras.php?table=toppings`);
+      return data || [];
+    } catch (err) {
+      console.error('Erro API getToppings, usando fallback:', err);
+    }
   }
+  return typeof TOPPINGS !== 'undefined' ? TOPPINGS : [];
 }
 
 // ============================================
@@ -258,14 +282,42 @@ async function getToppings() {
 // ============================================
 
 async function getChocolateBoxes() {
-  try {
-    if (_cache.chocolateBoxes) return _cache.chocolateBoxes;
-    const data = await apiFetch(`${API_BASE}/extras.php?table=chocolate_boxes`);
-    _cache.chocolateBoxes = data || [];
-    return _cache.chocolateBoxes;
-  } catch (err) {
-    console.error('Erro ao buscar caixas de chocolate:', err);
-    return [];
+  if (await checkApiAvailability()) {
+    try {
+      const data = await apiFetch(`${API_BASE}/extras.php?table=chocolate_boxes`);
+      return data || [];
+    } catch (err) {
+      console.error('Erro API getChocolateBoxes, usando fallback:', err);
+    }
+  }
+  return typeof CHOCOLATE_BOXES !== 'undefined' ? CHOCOLATE_BOXES : [];
+}
+
+// ============================================
+// FALLBACK: Dados estaticos do data.js
+// ============================================
+
+function getFallbackProducts(type) {
+  switch (type) {
+    case 'gelato':
+      return typeof SEED_GELATOS !== 'undefined' ? SEED_GELATOS : [];
+    case 'chocolate':
+      return typeof SEED_CHOCOLATES !== 'undefined' ? SEED_CHOCOLATES : [];
+    case 'diversos':
+      return typeof SEED_DIVERSOS !== 'undefined' ? SEED_DIVERSOS : [];
+    default:
+      return [];
+  }
+}
+
+function getFallbackCategories(type) {
+  switch (type) {
+    case 'gelato':
+      return typeof GELATO_CATEGORIES !== 'undefined' ? GELATO_CATEGORIES : [];
+    case 'chocolate':
+      return typeof CHOCOLATE_CATEGORIES !== 'undefined' ? CHOCOLATE_CATEGORIES : [];
+    default:
+      return [];
   }
 }
 
