@@ -260,7 +260,12 @@ async function getGelatoSizes() {
   if (await checkApiAvailability()) {
     try {
       const data = await apiFetch(`${API_BASE}/extras.php?table=gelato_sizes`);
-      return data || [];
+      return (data || []).map(s => ({
+        ...s,
+        id: s.id !== undefined ? String(s.id) : s.id,
+        price: Number(s.price) || 0,
+        balls: Number(s.balls) || 1,
+      }));
     } catch (err) {
       console.error('[Gante] Erro API getGelatoSizes:', err);
     }
@@ -276,7 +281,11 @@ async function getToppings() {
   if (await checkApiAvailability()) {
     try {
       const data = await apiFetch(`${API_BASE}/extras.php?table=toppings`);
-      return data || [];
+      return (data || []).map(t => ({
+        ...t,
+        id: t.id !== undefined ? String(t.id) : t.id,
+        price: Number(t.price) || 0,
+      }));
     } catch (err) {
       console.error('[Gante] Erro API getToppings:', err);
     }
@@ -292,7 +301,12 @@ async function getChocolateBoxes() {
   if (await checkApiAvailability()) {
     try {
       const data = await apiFetch(`${API_BASE}/extras.php?table=chocolate_boxes`);
-      return data || [];
+      return (data || []).map(b => ({
+        ...b,
+        id: b.id !== undefined ? String(b.id) : b.id,
+        price: Number(b.price) || 0,
+        slots: Number(b.slots) || 0,
+      }));
     } catch (err) {
       console.error('[Gante] Erro API getChocolateBoxes:', err);
     }
