@@ -1041,6 +1041,7 @@ p {
   cursor: default;
   font-size: 0.9rem;
   transition: all var(--transition-fast);
+  overflow: hidden;
 }
 
 .choco-choice-item:hover {
@@ -1079,7 +1080,6 @@ p {
 .choco-qty-control {
   display: flex;
   align-items: center;
-  gap: 0;
   flex-shrink: 0;
 }
 
@@ -2080,6 +2080,29 @@ p {
 
   .admin-table {
     min-width: 600px;
+  }
+
+  /* Categories view: stack on mobile */
+  #viewCategorias > div {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  #viewCategorias .admin-table-wrap {
+    min-width: 0 !important;
+  }
+
+  #viewCategorias .admin-table {
+    min-width: 0;
+  }
+
+  .admin-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .admin-header {
+    flex-wrap: wrap;
+    gap: 12px;
   }
 }
 
