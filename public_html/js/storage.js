@@ -71,12 +71,14 @@ async function apiFetch(url, options = {}) {
   try {
     data = JSON.parse(text);
   } catch (e) {
-    console.error('[Gante] apiFetch: resposta nao-JSON de', url, ':', text.substring(0, 500));
-    throw new Error('Resposta invalida do servidor');
+    console.error('[Gante] apiFetch ERRO: resposta nao-JSON de', url);
+    console.error('[Gante] Status:', response.status, '| Resposta:', text.substring(0, 1000));
+    throw new Error('Servidor retornou resposta invalida (status ' + response.status + '). Possivel erro PHP.');
   }
 
   if (!response.ok) {
-    throw new Error(data.error || 'Erro na requisicao');
+    console.error('[Gante] apiFetch ERRO HTTP', response.status, ':', data.error || JSON.stringify(data));
+    throw new Error(data.error || 'Erro HTTP ' + response.status);
   }
   return data;
 }
@@ -131,72 +133,64 @@ async function getProductById(type, id) {
 }
 
 async function addProduct(type, product) {
-  if (await checkApiAvailability()) {
-    try {
-      const body = {
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        category: product.category || null,
-        type: type,
-        image_url: product.imageUrl || '',
-      };
-      console.log('[Gante] addProduct enviando:', JSON.stringify(body));
-      const data = await apiFetch(`${API_BASE}/products.php`, {
-        method: 'POST',
-        body: JSON.stringify(body),
-      });
-      console.log('[Gante] addProduct resposta:', data);
-      return mapProductFromDB(data);
-    } catch (err) {
-      console.error('[Gante] Erro ao adicionar produto:', err);
-      return null;
-    }
+  // Operacoes de escrita tentam direto, sem depender do cache
+  try {
+    const body = {
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      category: product.category || null,
+      type: type,
+      image_url: product.imageUrl || '',
+    };
+    const data = await apiFetch(`${API_BASE}/products.php`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    _apiAvailable = true; // API confirmada online
+    return mapProductFromDB(data);
+  } catch (err) {
+    console.error('[Gante] Erro ao adicionar produto:', err);
+    _apiAvailable = false;
+    return null;
   }
-  console.warn('[Gante] API indisponivel. Nao e possivel adicionar produtos.');
-  return null;
 }
 
 async function updateProduct(type, id, updates) {
-  if (await checkApiAvailability()) {
-    try {
-      const body = { id: id };
-      if (updates.name !== undefined) body.name = updates.name;
-      if (updates.description !== undefined) body.description = updates.description;
-      if (updates.price !== undefined) body.price = updates.price;
-      if (updates.category !== undefined) body.category = updates.category;
-      if (updates.type !== undefined) body.type = updates.type;
-      if (updates.imageUrl !== undefined) body.image_url = updates.imageUrl;
+  // Operacoes de escrita tentam direto, sem depender do cache
+  try {
+    const body = { id: id };
+    if (updates.name !== undefined) body.name = updates.name;
+    if (updates.description !== undefined) body.description = updates.description;
+    if (updates.price !== undefined) body.price = updates.price;
+    if (updates.category !== undefined) body.category = updates.category;
+    if (updates.type !== undefined) body.type = updates.type;
+    if (updates.imageUrl !== undefined) body.image_url = updates.imageUrl;
 
-      console.log('[Gante] updateProduct enviando:', JSON.stringify(body));
-      const data = await apiFetch(`${API_BASE}/products.php`, {
-        method: 'PUT',
-        body: JSON.stringify(body),
-      });
-      console.log('[Gante] updateProduct resposta:', data);
-      return mapProductFromDB(data);
-    } catch (err) {
-      console.error('[Gante] Erro ao atualizar produto:', err);
-      return null;
-    }
+    const data = await apiFetch(`${API_BASE}/products.php`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    });
+    _apiAvailable = true; // API confirmada online
+    return mapProductFromDB(data);
+  } catch (err) {
+    console.error('[Gante] Erro ao atualizar produto:', err);
+    _apiAvailable = false;
+    return null;
   }
-  console.warn('[Gante] API indisponivel. Nao e possivel atualizar produtos.');
-  return null;
 }
 
 async function deleteProduct(type, id) {
-  if (await checkApiAvailability()) {
-    try {
-      const data = await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-      });
-      console.log('[Gante] deleteProduct resposta:', data);
-      return;
-    } catch (err) {
-      console.error('[Gante] Erro ao deletar produto:', err);
-    }
+  try {
+    await apiFetch(`${API_BASE}/products.php?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    _apiAvailable = true;
+  } catch (err) {
+    console.error('[Gante] Erro ao deletar produto:', err);
+    _apiAvailable = false;
+    throw err;
   }
-  console.warn('[Gante] API indisponivel. Nao e possivel deletar produtos.');
 }
 
 // ============================================
@@ -216,49 +210,47 @@ async function getCategories(type) {
 }
 
 async function addCategory(type, category) {
-  if (await checkApiAvailability()) {
-    try {
-      const body = { name: category.name, type: type };
-      const data = await apiFetch(`${API_BASE}/categories.php`, {
-        method: 'POST',
-        body: JSON.stringify(body),
-      });
-      return mapCategoryFromDB(data);
-    } catch (err) {
-      console.error('[Gante] Erro ao adicionar categoria:', err);
-      return null;
-    }
+  try {
+    const body = { name: category.name, type: type };
+    const data = await apiFetch(`${API_BASE}/categories.php`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    _apiAvailable = true;
+    return mapCategoryFromDB(data);
+  } catch (err) {
+    console.error('[Gante] Erro ao adicionar categoria:', err);
+    _apiAvailable = false;
+    return null;
   }
-  return null;
 }
 
 async function updateCategory(type, id, updates) {
-  if (await checkApiAvailability()) {
-    try {
-      const body = { id: id, name: updates.name };
-      const data = await apiFetch(`${API_BASE}/categories.php`, {
-        method: 'PUT',
-        body: JSON.stringify(body),
-      });
-      return mapCategoryFromDB(data);
-    } catch (err) {
-      console.error('[Gante] Erro ao atualizar categoria:', err);
-      return null;
-    }
+  try {
+    const body = { id: id, name: updates.name };
+    const data = await apiFetch(`${API_BASE}/categories.php`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    });
+    _apiAvailable = true;
+    return mapCategoryFromDB(data);
+  } catch (err) {
+    console.error('[Gante] Erro ao atualizar categoria:', err);
+    _apiAvailable = false;
+    return null;
   }
-  return null;
 }
 
 async function deleteCategory(type, id) {
-  if (await checkApiAvailability()) {
-    try {
-      await apiFetch(`${API_BASE}/categories.php?id=${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-      });
-      return;
-    } catch (err) {
-      console.error('[Gante] Erro ao deletar categoria:', err);
-    }
+  try {
+    await apiFetch(`${API_BASE}/categories.php?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    _apiAvailable = true;
+  } catch (err) {
+    console.error('[Gante] Erro ao deletar categoria:', err);
+    _apiAvailable = false;
+    throw err;
   }
 }
 

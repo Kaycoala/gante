@@ -346,12 +346,23 @@ function initProductModal() {
       imageUrl: imageUrl,
     };
 
+    let result;
     if (editId) {
-      await updateProduct(type, editId, productData);
-      showToast('Produto atualizado com sucesso!');
+      result = await updateProduct(type, editId, productData);
+      if (result) {
+        showToast('Produto atualizado com sucesso!');
+      } else {
+        showToast('ERRO: Nao foi possivel atualizar o produto. Verifique a conexao com o banco.', 'error');
+        return;
+      }
     } else {
-      await addProduct(type, productData);
-      showToast('Produto adicionado com sucesso!');
+      result = await addProduct(type, productData);
+      if (result) {
+        showToast('Produto adicionado com sucesso!');
+      } else {
+        showToast('ERRO: Nao foi possivel adicionar o produto. Verifique a conexao com o banco.', 'error');
+        return;
+      }
     }
 
     closeModal('productModal');
@@ -439,12 +450,23 @@ function initDiversosModal() {
       imageUrl: imageUrl,
     };
 
+    let result;
     if (editId) {
-      await updateProduct('diversos', editId, productData);
-      showToast('Item diverso atualizado com sucesso!');
+      result = await updateProduct('diversos', editId, productData);
+      if (result) {
+        showToast('Item diverso atualizado com sucesso!');
+      } else {
+        showToast('ERRO: Nao foi possivel atualizar o item. Verifique a conexao com o banco.', 'error');
+        return;
+      }
     } else {
-      await addProduct('diversos', productData);
-      showToast('Item diverso adicionado com sucesso!');
+      result = await addProduct('diversos', productData);
+      if (result) {
+        showToast('Item diverso adicionado com sucesso!');
+      } else {
+        showToast('ERRO: Nao foi possivel adicionar o item. Verifique a conexao com o banco.', 'error');
+        return;
+      }
     }
 
     closeModal('diversosModal');
@@ -497,12 +519,23 @@ function initCategoryModal() {
     const type = document.getElementById('catEditType').value;
     const name = document.getElementById('catName').value.trim();
 
+    let result;
     if (editId) {
-      await updateCategory(type, editId, { name });
-      showToast('Categoria atualizada com sucesso!');
+      result = await updateCategory(type, editId, { name });
+      if (result) {
+        showToast('Categoria atualizada com sucesso!');
+      } else {
+        showToast('ERRO: Nao foi possivel atualizar a categoria. Verifique a conexao.', 'error');
+        return;
+      }
     } else {
-      await addCategory(type, { name });
-      showToast('Categoria adicionada com sucesso!');
+      result = await addCategory(type, { name });
+      if (result) {
+        showToast('Categoria adicionada com sucesso!');
+      } else {
+        showToast('ERRO: Nao foi possivel adicionar a categoria. Verifique a conexao.', 'error');
+        return;
+      }
     }
 
     closeModal('categoryModal');
@@ -542,12 +575,16 @@ function initDeleteModal() {
   });
   document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
     if (pendingDelete) {
-      if (pendingDelete.kind === 'product') {
-        await deleteProduct(pendingDelete.type, pendingDelete.id);
-        showToast('Produto excluido com sucesso!');
-      } else {
-        await deleteCategory(pendingDelete.type, pendingDelete.id);
-        showToast('Categoria excluida com sucesso!');
+      try {
+        if (pendingDelete.kind === 'product') {
+          await deleteProduct(pendingDelete.type, pendingDelete.id);
+          showToast('Produto excluido com sucesso!');
+        } else {
+          await deleteCategory(pendingDelete.type, pendingDelete.id);
+          showToast('Categoria excluida com sucesso!');
+        }
+      } catch (err) {
+        showToast('ERRO ao excluir. Verifique a conexao com o banco.', 'error');
       }
       pendingDelete = null;
       closeModal('deleteModal');
