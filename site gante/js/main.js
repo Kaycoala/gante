@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initScrollAnimations();
   await renderGelatoSection();
   await renderChocolateSection();
+  await renderCafeteriaSection();
   await initOrderBuilder();
   initContactForm();
 });
@@ -143,6 +144,39 @@ async function renderChocolateCards(filter) {
   const grid = document.getElementById('chocolateGrid');
   const products = await getProductsByCategory('chocolate', filter);
   const categories = await getCategories('chocolate');
+
+  grid.innerHTML = products.map(p => {
+    const cat = categories.find(c => c.id === p.category);
+    return createProductCard(p, cat);
+  }).join('');
+}
+
+// ---- Render Cafeteria Section ----
+async function renderCafeteriaSection() {
+  const filterBar = document.getElementById('cafeteriaFilters');
+  const grid = document.getElementById('cafeteriaGrid');
+  const categories = await getCategories('diversos');
+
+  filterBar.innerHTML = `
+    <button class="filter-btn active" data-filter="todos">Todos</button>
+    ${categories.map(c => `<button class="filter-btn" data-filter="${c.id}">${c.name}</button>`).join('')}
+  `;
+
+  filterBar.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      await renderCafeteriaCards(btn.dataset.filter);
+    });
+  });
+
+  await renderCafeteriaCards('todos');
+}
+
+async function renderCafeteriaCards(filter) {
+  const grid = document.getElementById('cafeteriaGrid');
+  const products = await getProductsByCategory('diversos', filter);
+  const categories = await getCategories('diversos');
 
   grid.innerHTML = products.map(p => {
     const cat = categories.find(c => c.id === p.category);
@@ -853,10 +887,10 @@ function resetOrder() {
   updateOrderSummary();
 }
 
-// ---- Contact Form ----
+// ---- Contact Form (envia para vendas@ganteartesanal.com.br) ----
 function initContactForm() {
   const form = document.getElementById('contactForm');
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     let isValid = true;
 
@@ -891,9 +925,52 @@ function initContactForm() {
       messageGroup.classList.remove('has-error');
     }
 
-    if (isValid) {
-      form.reset();
-      showToast('Mensagem enviada com sucesso! Entraremos em contato em breve.', 'success');
+    if (!isValid) return;
+
+    const phone = document.getElementById('contactPhone');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.textContent;
+    submitBtn.textContent = 'Enviando...';
+    submitBtn.disabled = true;
+
+    try {
+      // Envia via FormSubmit (servico gratuito que encaminha para o email)
+      const response = await fetch('https://formsubmit.co/ajax/vendas@ganteartesanal.com.br', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          name: name.value.trim(),
+          email: email.value.trim(),
+          phone: phone ? phone.value.trim() : '',
+          message: message.value.trim(),
+          _subject: 'Nova mensagem do site Gante - ' + name.value.trim(),
+          _template: 'table',
+        }),
+      });
+
+      if (response.ok) {
+        form.reset();
+        showToast('Mensagem enviada com sucesso! Entraremos em contato em breve.', 'success');
+      } else {
+        throw new Error('Erro ao enviar');
+      }
+    } catch (err) {
+      // Fallback: abrir mailto com os dados preenchidos
+      const subject = encodeURIComponent('Contato pelo site Gante - ' + name.value.trim());
+      const body = encodeURIComponent(
+        'Nome: ' + name.value.trim() + '\n' +
+        'E-mail: ' + email.value.trim() + '\n' +
+        'Telefone: ' + (phone ? phone.value.trim() : 'Nao informado') + '\n\n' +
+        'Mensagem:\n' + message.value.trim()
+      );
+      window.location.href = 'mailto:vendas@ganteartesanal.com.br?subject=' + subject + '&body=' + body;
+      showToast('Abrindo seu aplicativo de e-mail para enviar a mensagem.', 'success');
+    } finally {
+      submitBtn.textContent = originalBtnText;
+      submitBtn.disabled = false;
     }
   });
 }

@@ -1359,6 +1359,16 @@ p {
   transform: translateY(-3px);
 }
 
+.social-whatsapp:hover {
+  background: #25D366;
+  color: #fff;
+}
+
+.social-ifood:hover {
+  background: #EA1D2C;
+  color: #fff;
+}
+
 /* ---- Footer ---- */
 .footer {
   background: var(--color-dark);
