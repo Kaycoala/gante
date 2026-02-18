@@ -396,12 +396,15 @@ p {
 .hero {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   overflow: hidden;
   background: var(--color-primary);
+  padding: 100px 0 80px;
+  box-sizing: border-box;
 }
 
 .hero-bg {
@@ -430,7 +433,8 @@ p {
   position: relative;
   z-index: 2;
   max-width: 780px;
-  padding: 0 24px;
+  padding: 0 20px;
+  width: 100%;
 }
 
 .hero-label {
@@ -452,9 +456,9 @@ p {
 }
 
 .hero-desc {
-  font-size: clamp(1rem, 2vw, 1.2rem);
+  font-size: clamp(0.95rem, 2vw, 1.2rem);
   color: rgba(var(--color-cream-rgb), 0.8);
-  margin-bottom: 36px;
+  margin-bottom: 28px;
   line-height: 1.7;
   animation: fadeInUp 0.8s 0.4s ease forwards;
   opacity: 0;
@@ -469,16 +473,18 @@ p {
 .hero-flavors {
   animation: fadeInUp 0.8s 0.55s ease forwards;
   opacity: 0;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
   background: rgba(255, 255, 255, 0.07);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(var(--color-gold-rgb), 0.25);
   border-radius: var(--radius-xl);
-  padding: 20px 28px;
+  padding: 20px 24px;
   max-width: 560px;
+  width: 100%;
   margin-left: auto;
   margin-right: auto;
+  box-sizing: border-box;
 }
 
 .hero-flavors-header {
@@ -486,7 +492,7 @@ p {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .hero-flavors-icon {
@@ -494,11 +500,12 @@ p {
   align-items: center;
   justify-content: center;
   color: var(--color-gold);
+  flex-shrink: 0;
 }
 
 .hero-flavors-title {
   font-family: var(--font-heading);
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--color-gold);
   letter-spacing: 0.04em;
@@ -509,18 +516,19 @@ p {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .hero-flavor-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(var(--color-cream-rgb), 0.15);
   border-radius: 999px;
-  padding: 6px 16px 6px 8px;
+  padding: 5px 14px 5px 7px;
   transition: all var(--transition-fast);
+  max-width: 100%;
 }
 
 .hero-flavor-chip:hover {
@@ -530,16 +538,17 @@ p {
 }
 
 .hero-flavor-img {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   object-fit: cover;
+  flex-shrink: 0;
   border: 2px solid rgba(var(--color-gold-rgb), 0.4);
 }
 
 .hero-flavor-dot {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   display: block;
   flex-shrink: 0;
@@ -547,35 +556,90 @@ p {
 }
 
 .hero-flavor-name {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 500;
   color: var(--color-cream);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-@media (max-width: 480px) {
+/* Tablet */
+@media (max-width: 768px) {
+  .hero {
+    padding: 90px 0 70px;
+  }
+
   .hero-flavors {
-    padding: 16px 18px;
-    border-radius: var(--radius-lg);
+    padding: 16px 16px;
+    max-width: 420px;
+  }
+
+  .hero-flavors-title {
+    font-size: 0.88rem;
   }
 
   .hero-flavors-grid {
-    gap: 8px;
+    gap: 6px;
   }
 
   .hero-flavor-chip {
-    padding: 5px 12px 5px 6px;
+    padding: 4px 11px 4px 5px;
     gap: 6px;
   }
 
   .hero-flavor-img,
   .hero-flavor-dot {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
 
   .hero-flavor-name {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
+  }
+}
+
+/* Mobile small */
+@media (max-width: 480px) {
+  .hero {
+    padding: 80px 0 60px;
+  }
+
+  .hero-content {
+    padding: 0 16px;
+  }
+
+  .hero-flavors {
+    padding: 14px 12px;
+    border-radius: var(--radius-lg);
+    margin-bottom: 24px;
+  }
+
+  .hero-flavors-header {
+    margin-bottom: 10px;
+  }
+
+  .hero-flavors-title {
+    font-size: 0.82rem;
+  }
+
+  .hero-flavors-grid {
+    gap: 5px;
+  }
+
+  .hero-flavor-chip {
+    padding: 4px 10px 4px 4px;
+    gap: 5px;
+  }
+
+  .hero-flavor-img,
+  .hero-flavor-dot {
+    width: 20px;
+    height: 20px;
+  }
+
+  .hero-flavor-name {
+    font-size: 0.73rem;
   }
 }
 
