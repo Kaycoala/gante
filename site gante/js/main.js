@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initNavbar();
   initMobileMenu();
   initScrollAnimations();
+  await renderHeroFlavorsToday();
   await renderGelatoSection();
   await renderChocolateSection();
   await renderCafeteriaSection();
@@ -81,6 +82,40 @@ function initScrollAnimations() {
   }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
   document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+}
+
+// ---- Sabores do Dia no Hero ----
+async function renderHeroFlavorsToday() {
+  const container = document.getElementById('heroFlavorsTodayGrid');
+  const section = document.getElementById('heroFlavorsToday');
+  if (!container || !section) return;
+
+  let flavors = [];
+  try {
+    flavors = await getFlavorsOfTheDay();
+  } catch (e) {
+    // silently fail
+  }
+
+  if (flavors.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  container.innerHTML = flavors.map(f => {
+    const hasImg = f.imageUrl && f.imageUrl.length > 0;
+    const hue = hashStringToHue(f.name);
+    return `
+      <div class="hero-flavor-chip">
+        ${hasImg
+          ? `<img class="hero-flavor-img" src="${f.imageUrl}" alt="${f.name}">`
+          : `<span class="hero-flavor-dot" style="background:hsl(${hue}, 40%, 72%)"></span>`
+        }
+        <span class="hero-flavor-name">${f.name}</span>
+      </div>
+    `;
+  }).join('');
 }
 
 // ---- Render Gelato Section ----
