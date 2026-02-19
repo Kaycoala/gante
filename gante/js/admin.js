@@ -72,6 +72,8 @@ async function initDashboard() {
   try { await renderGelatoTable(); } catch (e) { console.error('[v0] renderGelatoTable error:', e); }
   try { await renderChocolateTable(); } catch (e) { console.error('[v0] renderChocolateTable error:', e); }
   try { await renderDiversosTable(); } catch (e) { console.error('[v0] renderDiversosTable error:', e); }
+  try { await renderSoftTable(); } catch (e) { console.error('[v0] renderSoftTable error:', e); }
+  try { await renderAcaiTable(); } catch (e) { console.error('[v0] renderAcaiTable error:', e); }
   try { await renderCategoryTables(); } catch (e) { console.error('[v0] renderCategoryTables error:', e); }
   try { await renderFlavorsOfDay(); } catch (e) { console.error('[v0] renderFlavorsOfDay error:', e); }
 }
@@ -231,6 +233,88 @@ async function renderChocolateTable(search = '') {
   }
 }
 
+// ---- Linha Soft Table ----
+async function renderSoftTable(search = '') {
+  const tbody = document.getElementById('softTableBody');
+  let products = await getProducts('soft');
+  const categories = await getCategories('soft');
+
+  if (search) {
+    const s = search.toLowerCase();
+    products = products.filter(p => p.name.toLowerCase().includes(s) || p.description.toLowerCase().includes(s));
+  }
+
+  tbody.innerHTML = products.map(p => {
+    const cat = categories.find(c => c.id === p.category);
+    const hasImg = p.imageUrl && p.imageUrl.length > 0;
+    const hue = hashStringToHue(p.name);
+    return `
+      <tr>
+        <td>
+          <div style="display:flex; align-items:center; gap:10px;">
+            ${hasImg
+              ? `<img class="admin-product-thumb" src="${p.imageUrl}" alt="${p.name}">`
+              : `<span class="admin-product-thumb-placeholder" style="background:hsl(${hue}, 25%, 78%)">${p.name.charAt(0)}</span>`
+            }
+            <strong>${p.name}</strong>
+          </div>
+        </td>
+        <td><span class="category-pill">${cat ? cat.name : p.category}</span></td>
+        <td style="font-weight:600;">${formatPrice(p.price)}</td>
+        <td class="actions">
+          <button class="btn-edit" onclick="editProduct('soft', '${p.id}')">Editar</button>
+          <button class="btn-delete" onclick="requestDelete('product', 'soft', '${p.id}', '${p.name}')">Excluir</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  if (products.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:32px; color:rgba(15,59,46,0.4);">Nenhum produto da Linha Soft encontrado.</td></tr>';
+  }
+}
+
+// ---- Acai Table ----
+async function renderAcaiTable(search = '') {
+  const tbody = document.getElementById('acaiTableBody');
+  let products = await getProducts('acai');
+  const categories = await getCategories('acai');
+
+  if (search) {
+    const s = search.toLowerCase();
+    products = products.filter(p => p.name.toLowerCase().includes(s) || p.description.toLowerCase().includes(s));
+  }
+
+  tbody.innerHTML = products.map(p => {
+    const cat = categories.find(c => c.id === p.category);
+    const hasImg = p.imageUrl && p.imageUrl.length > 0;
+    const hue = hashStringToHue(p.name);
+    return `
+      <tr>
+        <td>
+          <div style="display:flex; align-items:center; gap:10px;">
+            ${hasImg
+              ? `<img class="admin-product-thumb" src="${p.imageUrl}" alt="${p.name}">`
+              : `<span class="admin-product-thumb-placeholder" style="background:hsl(${hue}, 25%, 78%)">${p.name.charAt(0)}</span>`
+            }
+            <strong>${p.name}</strong>
+          </div>
+        </td>
+        <td><span class="category-pill">${cat ? cat.name : p.category}</span></td>
+        <td style="font-weight:600;">${formatPrice(p.price)}</td>
+        <td class="actions">
+          <button class="btn-edit" onclick="editProduct('acai', '${p.id}')">Editar</button>
+          <button class="btn-delete" onclick="requestDelete('product', 'acai', '${p.id}', '${p.name}')">Excluir</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  if (products.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:32px; color:rgba(15,59,46,0.4);">Nenhum produto de Acai encontrado.</td></tr>';
+  }
+}
+
 // ---- Diversos Table ----
 async function renderDiversosTable(search = '') {
   const tbody = document.getElementById('diversosTableBody');
@@ -281,6 +365,8 @@ async function renderCategoryTables() {
   await renderCatTable('gelato', 'gelatoCatBody');
   await renderCatTable('chocolate', 'chocoCatBody');
   await renderCatTable('diversos', 'diversosCatBody');
+  await renderCatTable('soft', 'softCatBody');
+  await renderCatTable('acai', 'acaiCatBody');
 }
 
 async function renderCatTable(type, bodyId) {
@@ -318,6 +404,12 @@ function initSearch() {
   document.getElementById('diversosSearch').addEventListener('input', (e) => {
     renderDiversosTable(e.target.value);
   });
+  document.getElementById('softSearch').addEventListener('input', (e) => {
+    renderSoftTable(e.target.value);
+  });
+  document.getElementById('acaiSearch').addEventListener('input', (e) => {
+    renderAcaiTable(e.target.value);
+  });
 }
 
 // ---- Add Buttons ----
@@ -325,9 +417,13 @@ function initAddButtons() {
   document.getElementById('addGelatoBtn').addEventListener('click', () => openProductModal('gelato'));
   document.getElementById('addChocolateBtn').addEventListener('click', () => openProductModal('chocolate'));
   document.getElementById('addDiversosBtn').addEventListener('click', () => openDiversosModal());
+  document.getElementById('addSoftBtn').addEventListener('click', () => openProductModal('soft'));
+  document.getElementById('addAcaiBtn').addEventListener('click', () => openProductModal('acai'));
   document.getElementById('addGelatoCatBtn').addEventListener('click', () => openCategoryModal('gelato'));
   document.getElementById('addChocoCatBtn').addEventListener('click', () => openCategoryModal('chocolate'));
   document.getElementById('addDiversosCatBtn').addEventListener('click', () => openCategoryModal('diversos'));
+  document.getElementById('addSoftCatBtn').addEventListener('click', () => openCategoryModal('soft'));
+  document.getElementById('addAcaiCatBtn').addEventListener('click', () => openCategoryModal('acai'));
 }
 
 // ---- Product Modal ----
@@ -582,6 +678,8 @@ function getDisplayTypeName(type) {
     case 'gelato': return 'Gelato';
     case 'chocolate': return 'Chocolate';
     case 'diversos': return 'Cafeteria';
+    case 'soft': return 'Linha Soft';
+    case 'acai': return 'Acai';
     default: return type;
   }
 }
@@ -728,6 +826,8 @@ async function refreshTables() {
   await renderGelatoTable(document.getElementById('gelatoSearch').value);
   await renderChocolateTable(document.getElementById('chocolateSearch').value);
   await renderDiversosTable(document.getElementById('diversosSearch').value);
+  await renderSoftTable(document.getElementById('softSearch').value);
+  await renderAcaiTable(document.getElementById('acaiSearch').value);
   await renderCategoryTables();
   await renderFlavorsOfDay();
 }

@@ -57,6 +57,14 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
           Cafeteria
         </button>
+        <button class="admin-nav-item" data-view="soft">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C8 2 6 5 6 8c0 2 1 4 2 5l-1 7h10l-1-7c1-1 2-3 2-5 0-3-2-6-6-6z"/><path d="M9 20h6v2H9z"/></svg>
+          Linha Soft
+        </button>
+        <button class="admin-nav-item" data-view="acai">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7z"/><circle cx="12" cy="9" r="3"/></svg>
+          Acai
+        </button>
         <button class="admin-nav-item" data-view="categorias">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
           Categorias
@@ -166,6 +174,58 @@
         </div>
       </div>
 
+      <!-- ---- LINHA SOFT VIEW ---- -->
+      <div class="admin-view" id="viewSoft" style="display:none;">
+        <div class="admin-header">
+          <h1>Linha Soft</h1>
+          <div class="admin-header-actions">
+            <button class="btn btn-primary btn-sm" id="addSoftBtn">+ Novo Produto</button>
+          </div>
+        </div>
+        <div class="admin-table-wrap">
+          <div class="admin-table-header">
+            <input type="text" class="admin-table-search" id="softSearch" placeholder="Buscar linha soft...">
+          </div>
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Categoria</th>
+                <th>Preco</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody id="softTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ---- ACAI VIEW ---- -->
+      <div class="admin-view" id="viewAcai" style="display:none;">
+        <div class="admin-header">
+          <h1>Acai</h1>
+          <div class="admin-header-actions">
+            <button class="btn btn-primary btn-sm" id="addAcaiBtn">+ Novo Produto</button>
+          </div>
+        </div>
+        <div class="admin-table-wrap">
+          <div class="admin-table-header">
+            <input type="text" class="admin-table-search" id="acaiSearch" placeholder="Buscar acai...">
+          </div>
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Categoria</th>
+                <th>Preco</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody id="acaiTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- ---- CATEGORIAS VIEW ---- -->
       <div class="admin-view" id="viewCategorias" style="display:none;">
         <div class="admin-header">
@@ -221,6 +281,40 @@
                 </tr>
               </thead>
               <tbody id="diversosCatBody"></tbody>
+            </table>
+          </div>
+          <!-- Linha Soft Categories -->
+          <div class="admin-table-wrap" style="flex:1; min-width:300px;">
+            <div class="admin-table-header">
+              <strong>Categorias de Linha Soft</strong>
+              <button class="btn btn-primary btn-sm" id="addSoftCatBtn">+ Nova</button>
+            </div>
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>ID</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="softCatBody"></tbody>
+            </table>
+          </div>
+          <!-- Acai Categories -->
+          <div class="admin-table-wrap" style="flex:1; min-width:300px;">
+            <div class="admin-table-header">
+              <strong>Categorias de Acai</strong>
+              <button class="btn btn-primary btn-sm" id="addAcaiCatBtn">+ Nova</button>
+            </div>
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>ID</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="acaiCatBody"></tbody>
             </table>
           </div>
         </div>

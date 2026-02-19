@@ -11,9 +11,40 @@ document.addEventListener('DOMContentLoaded', async () => {
   await renderGelatoSection();
   await renderChocolateSection();
   await renderCafeteriaSection();
+  await renderSoftSection();
+  await renderAcaiSection();
   await initOrderBuilder();
   initContactForm();
+  initPaginationResize();
 });
+
+// ---- Handle window resize for pagination breakpoint ----
+function initPaginationResize() {
+  let lastPerPage = getPerPage();
+  window.addEventListener('resize', () => {
+    const newPerPage = getPerPage();
+    if (newPerPage !== lastPerPage) {
+      lastPerPage = newPerPage;
+      // Reset all section pages to 1 and re-render
+      Object.keys(_sectionPages).forEach(k => { _sectionPages[k] = 1; });
+      // Re-render all catalog sections with their current filter
+      const sections = [
+        { filterBarId: 'gelatoFilters', type: 'gelato', gridId: 'gelatoGrid', paginationId: 'gelatoPagination', sectionKey: 'gelato' },
+        { filterBarId: 'chocolateFilters', type: 'chocolate', gridId: 'chocolateGrid', paginationId: 'chocolatePagination', sectionKey: 'chocolate' },
+        { filterBarId: 'cafeteriaFilters', type: 'diversos', gridId: 'cafeteriaGrid', paginationId: 'cafeteriaPagination', sectionKey: 'cafeteria' },
+        { filterBarId: 'softFilters', type: 'soft', gridId: 'softGrid', paginationId: 'softPagination', sectionKey: 'soft' },
+        { filterBarId: 'acaiFilters', type: 'acai', gridId: 'acaiGrid', paginationId: 'acaiPagination', sectionKey: 'acai' },
+      ];
+      sections.forEach(config => {
+        const filterBar = document.getElementById(config.filterBarId);
+        if (!filterBar) return;
+        const activeBtn = filterBar.querySelector('.filter-btn.active');
+        const filter = activeBtn ? activeBtn.dataset.filter : 'todos';
+        renderCatalogCards(config, filter);
+      });
+    }
+  });
+}
 
 // ---- Navbar ----
 function initNavbar() {
@@ -118,105 +149,188 @@ async function renderHeroFlavorsToday() {
   }).join('');
 }
 
-// ---- Render Gelato Section ----
-async function renderGelatoSection() {
-  const filterBar = document.getElementById('gelatoFilters');
-  const grid = document.getElementById('gelatoGrid');
-  const categories = await getCategories('gelato');
+// ---- Pagination Helpers ----
+// Per-page limits: 6 for desktop (>=768px), 3 for mobile (<768px)
+function getPerPage() {
+  return window.innerWidth >= 768 ? 6 : 3;
+}
 
-  // Render filter buttons
+// Track current page per section
+const _sectionPages = {
+  gelato: 1,
+  chocolate: 1,
+  cafeteria: 1,
+  soft: 1,
+  acai: 1,
+};
+
+function renderPagination(containerId, totalItems, currentPage, onPageChange) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const perPage = getPerPage();
+  const totalPages = Math.ceil(totalItems / perPage);
+
+  if (totalPages <= 1) {
+    container.innerHTML = '';
+    return;
+  }
+
+  let html = '<div class="pagination">';
+
+  // Prev button
+  html += `<button class="pagination-btn" ${currentPage <= 1 ? 'disabled' : ''} data-page="${currentPage - 1}">&laquo;</button>`;
+
+  // Page numbers
+  const maxVisible = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+  if (endPage - startPage < maxVisible - 1) {
+    startPage = Math.max(1, endPage - maxVisible + 1);
+  }
+
+  if (startPage > 1) {
+    html += `<button class="pagination-btn" data-page="1">1</button>`;
+    if (startPage > 2) html += `<span class="pagination-info">...</span>`;
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) html += `<span class="pagination-info">...</span>`;
+    html += `<button class="pagination-btn" data-page="${totalPages}">${totalPages}</button>`;
+  }
+
+  // Next button
+  html += `<button class="pagination-btn" ${currentPage >= totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">&raquo;</button>`;
+
+  html += '</div>';
+  container.innerHTML = html;
+
+  // Bind click events
+  container.querySelectorAll('.pagination-btn:not(:disabled)').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const page = parseInt(btn.dataset.page);
+      if (page && page !== currentPage) {
+        onPageChange(page);
+      }
+    });
+  });
+}
+
+function paginateItems(items, page) {
+  const perPage = getPerPage();
+  const start = (page - 1) * perPage;
+  return items.slice(start, start + perPage);
+}
+
+// ---- Generic Section Renderer (with pagination) ----
+async function renderCatalogSection(config) {
+  const { type, filterBarId, gridId, paginationId, sectionKey } = config;
+  const filterBar = document.getElementById(filterBarId);
+  const categories = await getCategories(type);
+
   filterBar.innerHTML = `
     <button class="filter-btn active" data-filter="todos">Todos</button>
     ${categories.map(c => `<button class="filter-btn" data-filter="${c.id}">${c.name}</button>`).join('')}
   `;
 
-  // Bind filter clicks
   filterBar.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      await renderGelatoCards(btn.dataset.filter);
+      _sectionPages[sectionKey] = 1;
+      await renderCatalogCards(config, btn.dataset.filter);
     });
   });
 
-  await renderGelatoCards('todos');
+  _sectionPages[sectionKey] = 1;
+  await renderCatalogCards(config, 'todos');
 }
 
-async function renderGelatoCards(filter) {
-  const grid = document.getElementById('gelatoGrid');
-  const products = await getProductsByCategory('gelato', filter);
-  const categories = await getCategories('gelato');
+async function renderCatalogCards(config, filter) {
+  const { type, gridId, paginationId, sectionKey } = config;
+  const grid = document.getElementById(gridId);
+  const allProducts = await getProductsByCategory(type, filter);
+  const categories = await getCategories(type);
+  const currentPage = _sectionPages[sectionKey];
+  const pageProducts = paginateItems(allProducts, currentPage);
 
-  grid.innerHTML = products.map(p => {
+  grid.innerHTML = pageProducts.map(p => {
     const cat = categories.find(c => c.id === p.category);
     return createProductCard(p, cat);
   }).join('');
+
+  if (allProducts.length === 0) {
+    grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; padding:40px 0; color:rgba(15,59,46,0.4);">Nenhum produto encontrado.</p>';
+  }
+
+  renderPagination(paginationId, allProducts.length, currentPage, async (page) => {
+    _sectionPages[sectionKey] = page;
+    await renderCatalogCards(config, filter);
+    // Scroll to section top
+    const section = grid.closest('.section');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+}
+
+// ---- Render Gelato Section ----
+async function renderGelatoSection() {
+  await renderCatalogSection({
+    type: 'gelato',
+    filterBarId: 'gelatoFilters',
+    gridId: 'gelatoGrid',
+    paginationId: 'gelatoPagination',
+    sectionKey: 'gelato',
+  });
 }
 
 // ---- Render Chocolate Section ----
 async function renderChocolateSection() {
-  const filterBar = document.getElementById('chocolateFilters');
-  const grid = document.getElementById('chocolateGrid');
-  const categories = await getCategories('chocolate');
-
-  filterBar.innerHTML = `
-    <button class="filter-btn active" data-filter="todos">Todos</button>
-    ${categories.map(c => `<button class="filter-btn" data-filter="${c.id}">${c.name}</button>`).join('')}
-  `;
-
-  filterBar.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      await renderChocolateCards(btn.dataset.filter);
-    });
+  await renderCatalogSection({
+    type: 'chocolate',
+    filterBarId: 'chocolateFilters',
+    gridId: 'chocolateGrid',
+    paginationId: 'chocolatePagination',
+    sectionKey: 'chocolate',
   });
-
-  await renderChocolateCards('todos');
-}
-
-async function renderChocolateCards(filter) {
-  const grid = document.getElementById('chocolateGrid');
-  const products = await getProductsByCategory('chocolate', filter);
-  const categories = await getCategories('chocolate');
-
-  grid.innerHTML = products.map(p => {
-    const cat = categories.find(c => c.id === p.category);
-    return createProductCard(p, cat);
-  }).join('');
 }
 
 // ---- Render Cafeteria Section ----
 async function renderCafeteriaSection() {
-  const filterBar = document.getElementById('cafeteriaFilters');
-  const grid = document.getElementById('cafeteriaGrid');
-  const categories = await getCategories('diversos');
-
-  filterBar.innerHTML = `
-    <button class="filter-btn active" data-filter="todos">Todos</button>
-    ${categories.map(c => `<button class="filter-btn" data-filter="${c.id}">${c.name}</button>`).join('')}
-  `;
-
-  filterBar.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      await renderCafeteriaCards(btn.dataset.filter);
-    });
+  await renderCatalogSection({
+    type: 'diversos',
+    filterBarId: 'cafeteriaFilters',
+    gridId: 'cafeteriaGrid',
+    paginationId: 'cafeteriaPagination',
+    sectionKey: 'cafeteria',
   });
-
-  await renderCafeteriaCards('todos');
 }
 
-async function renderCafeteriaCards(filter) {
-  const grid = document.getElementById('cafeteriaGrid');
-  const products = await getProductsByCategory('diversos', filter);
-  const categories = await getCategories('diversos');
+// ---- Render Linha Soft Section ----
+async function renderSoftSection() {
+  await renderCatalogSection({
+    type: 'soft',
+    filterBarId: 'softFilters',
+    gridId: 'softGrid',
+    paginationId: 'softPagination',
+    sectionKey: 'soft',
+  });
+}
 
-  grid.innerHTML = products.map(p => {
-    const cat = categories.find(c => c.id === p.category);
-    return createProductCard(p, cat);
-  }).join('');
+// ---- Render Acai Section ----
+async function renderAcaiSection() {
+  await renderCatalogSection({
+    type: 'acai',
+    filterBarId: 'acaiFilters',
+    gridId: 'acaiGrid',
+    paginationId: 'acaiPagination',
+    sectionKey: 'acai',
+  });
 }
 
 // ---- Shared Product Card Template ----
