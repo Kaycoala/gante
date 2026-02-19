@@ -118,10 +118,154 @@ async function renderHeroFlavorsToday() {
   }).join('');
 }
 
+// ---- Pagination Helper ----
+// Returns the items per page based on screen width
+function getItemsPerPage() {
+  return window.innerWidth < 768 ? 3 : 6;
+}
+
+// Pagination state per section
+const paginationState = {
+  gelato: { page: 1, products: [], categories: [] },
+  chocolate: { page: 1, products: [], categories: [] },
+  cafeteria: { page: 1, products: [], categories: [] },
+};
+
+// Renders a pagination control bar
+function renderPaginationControls(sectionKey, containerId) {
+  const state = paginationState[sectionKey];
+  const perPage = getItemsPerPage();
+  const totalPages = Math.ceil(state.products.length / perPage);
+
+  // Remove existing pagination for this section
+  const existingPag = document.getElementById(`pagination-${sectionKey}`);
+  if (existingPag) existingPag.remove();
+
+  // No pagination needed
+  if (totalPages <= 1) return;
+
+  const paginationEl = document.createElement('div');
+  paginationEl.id = `pagination-${sectionKey}`;
+  paginationEl.className = 'catalog-pagination';
+
+  // Previous button
+  const prevDisabled = state.page <= 1 ? 'disabled' : '';
+  let html = `<button class="pagination-btn pagination-prev ${prevDisabled}" data-section="${sectionKey}" data-action="prev" ${prevDisabled ? 'disabled' : ''}>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>`;
+
+  // Page numbers
+  html += '<div class="pagination-numbers">';
+  const maxVisible = window.innerWidth < 480 ? 3 : 5;
+  let startPage = Math.max(1, state.page - Math.floor(maxVisible / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+  if (endPage - startPage + 1 < maxVisible) {
+    startPage = Math.max(1, endPage - maxVisible + 1);
+  }
+
+  if (startPage > 1) {
+    html += `<button class="pagination-num" data-section="${sectionKey}" data-page="1">1</button>`;
+    if (startPage > 2) html += '<span class="pagination-ellipsis">...</span>';
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    const activeClass = i === state.page ? 'active' : '';
+    html += `<button class="pagination-num ${activeClass}" data-section="${sectionKey}" data-page="${i}">${i}</button>`;
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) html += '<span class="pagination-ellipsis">...</span>';
+    html += `<button class="pagination-num" data-section="${sectionKey}" data-page="${totalPages}">${totalPages}</button>`;
+  }
+  html += '</div>';
+
+  // Next button
+  const nextDisabled = state.page >= totalPages ? 'disabled' : '';
+  html += `<button class="pagination-btn pagination-next ${nextDisabled}" data-section="${sectionKey}" data-action="next" ${nextDisabled ? 'disabled' : ''}>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+  </button>`;
+
+  paginationEl.innerHTML = html;
+
+  // Insert after the grid
+  const gridEl = document.getElementById(containerId);
+  gridEl.parentNode.insertBefore(paginationEl, gridEl.nextSibling);
+
+  // Bind events
+  paginationEl.querySelectorAll('.pagination-num').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const page = parseInt(btn.dataset.page);
+      paginationState[btn.dataset.section].page = page;
+      renderPaginatedCards(btn.dataset.section);
+    });
+  });
+
+  paginationEl.querySelectorAll('.pagination-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      const section = btn.dataset.section;
+      if (btn.dataset.action === 'prev') {
+        paginationState[section].page = Math.max(1, paginationState[section].page - 1);
+      } else if (btn.dataset.action === 'next') {
+        const perP = getItemsPerPage();
+        const total = Math.ceil(paginationState[section].products.length / perP);
+        paginationState[section].page = Math.min(total, paginationState[section].page + 1);
+      }
+      renderPaginatedCards(section);
+    });
+  });
+}
+
+// Renders the current page of cards for a section
+function renderPaginatedCards(sectionKey) {
+  const gridIds = { gelato: 'gelatoGrid', chocolate: 'chocolateGrid', cafeteria: 'cafeteriaGrid' };
+  const gridId = gridIds[sectionKey];
+  const grid = document.getElementById(gridId);
+  const state = paginationState[sectionKey];
+
+  const perPage = getItemsPerPage();
+  const start = (state.page - 1) * perPage;
+  const pageProducts = state.products.slice(start, start + perPage);
+
+  grid.innerHTML = pageProducts.map(p => {
+    const cat = state.categories.find(c => c.id === p.category);
+    return createProductCard(p, cat);
+  }).join('');
+
+  renderPaginationControls(sectionKey, gridId);
+
+  // Scroll to top of the section smoothly
+  if (state.page > 1 || start > 0) {
+    const sectionIds = { gelato: 'sabores', chocolate: 'chocolates', cafeteria: 'cafeteria' };
+    const sectionEl = document.getElementById(sectionIds[sectionKey]);
+    if (sectionEl) {
+      sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+}
+
+// Listen for window resize to recalculate pagination
+let _resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    ['gelato', 'chocolate', 'cafeteria'].forEach(key => {
+      if (paginationState[key].products.length > 0) {
+        // Clamp page to valid range after resize
+        const perPage = getItemsPerPage();
+        const totalPages = Math.ceil(paginationState[key].products.length / perPage);
+        if (paginationState[key].page > totalPages) {
+          paginationState[key].page = totalPages;
+        }
+        renderPaginatedCards(key);
+      }
+    });
+  }, 250);
+});
+
 // ---- Render Gelato Section ----
 async function renderGelatoSection() {
   const filterBar = document.getElementById('gelatoFilters');
-  const grid = document.getElementById('gelatoGrid');
   const categories = await getCategories('gelato');
 
   // Render filter buttons
@@ -143,20 +287,18 @@ async function renderGelatoSection() {
 }
 
 async function renderGelatoCards(filter) {
-  const grid = document.getElementById('gelatoGrid');
   const products = await getProductsByCategory('gelato', filter);
   const categories = await getCategories('gelato');
 
-  grid.innerHTML = products.map(p => {
-    const cat = categories.find(c => c.id === p.category);
-    return createProductCard(p, cat);
-  }).join('');
+  paginationState.gelato.products = products;
+  paginationState.gelato.categories = categories;
+  paginationState.gelato.page = 1;
+  renderPaginatedCards('gelato');
 }
 
 // ---- Render Chocolate Section ----
 async function renderChocolateSection() {
   const filterBar = document.getElementById('chocolateFilters');
-  const grid = document.getElementById('chocolateGrid');
   const categories = await getCategories('chocolate');
 
   filterBar.innerHTML = `
@@ -176,20 +318,18 @@ async function renderChocolateSection() {
 }
 
 async function renderChocolateCards(filter) {
-  const grid = document.getElementById('chocolateGrid');
   const products = await getProductsByCategory('chocolate', filter);
   const categories = await getCategories('chocolate');
 
-  grid.innerHTML = products.map(p => {
-    const cat = categories.find(c => c.id === p.category);
-    return createProductCard(p, cat);
-  }).join('');
+  paginationState.chocolate.products = products;
+  paginationState.chocolate.categories = categories;
+  paginationState.chocolate.page = 1;
+  renderPaginatedCards('chocolate');
 }
 
 // ---- Render Cafeteria Section ----
 async function renderCafeteriaSection() {
   const filterBar = document.getElementById('cafeteriaFilters');
-  const grid = document.getElementById('cafeteriaGrid');
   const categories = await getCategories('diversos');
 
   filterBar.innerHTML = `
@@ -209,14 +349,13 @@ async function renderCafeteriaSection() {
 }
 
 async function renderCafeteriaCards(filter) {
-  const grid = document.getElementById('cafeteriaGrid');
   const products = await getProductsByCategory('diversos', filter);
   const categories = await getCategories('diversos');
 
-  grid.innerHTML = products.map(p => {
-    const cat = categories.find(c => c.id === p.category);
-    return createProductCard(p, cat);
-  }).join('');
+  paginationState.cafeteria.products = products;
+  paginationState.cafeteria.categories = categories;
+  paginationState.cafeteria.page = 1;
+  renderPaginatedCards('cafeteria');
 }
 
 // ---- Shared Product Card Template ----
