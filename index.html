@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Gantê Gelato Artesanal & Chocolates - Autentico gelato italiano e chocolates finos artesanais feitos com ingredientes selecionados.">
+  <meta name="theme-color" content="#0F3B2E">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Gantê | Gelato Artesanal & Chocolates</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="images/icon.png">
+</head>
+<body>
+
+  <!-- ========== NAVBAR ========== -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <a href="#hero" class="nav-logo"><img src="images/logo-gante.png" alt="Gantê" class="nav-logo-img"></a>
+      <div class="nav-links">
+        <a href="#sabores">Gelato</a>
+        <a href="#chocolates">Chocolates</a>
+        <a href="#cafeteria">Cafeteria</a>
+        <a href="#pedido">Pedido</a>
+        <a href="#historia">Historia</a>
+        <a href="#contato">Contato</a>
+        <a href="admin.html" class="nav-admin-link">Admin</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Abrir menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Navigation -->
+  <div class="mobile-nav" id="mobileNav">
+    <a href="#sabores">Gelato</a>
+    <a href="#chocolates">Chocolates</a>
+    <a href="#cafeteria">Cafeteria</a>
+    <a href="#pedido">Monte Seu Pedido</a>
+    <a href="#historia">Nossa Historia</a>
+    <a href="#contato">Contato</a>
+    <a href="admin.html">Painel Admin</a>
+  </div>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero" id="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-pattern"></div>
+    <div class="hero-content">
+      <span class="hero-label"><img src="images/logo-gante.png" alt="Gantê" class="hero-logo-img"></span>
+      <h1>Autentico Gelato Italiano &amp; Chocolates Artesanais</h1>
+      <p class="hero-desc">
+        Receitas tradicionais italianas com ingredientes selecionados, 
+        feitos artesanalmente todos os dias com paixao e dedicacao.
+      </p>
+
+      <!-- Sabores do Dia no Hero -->
+      <div class="hero-flavors" id="heroFlavorsToday" style="display:none;">
+        <div class="hero-flavors-header">
+          <span class="hero-flavors-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </span>
+          <span class="hero-flavors-title">Sabores do Dia</span>
+        </div>
+        <div class="hero-flavors-grid" id="heroFlavorsTodayGrid"></div>
+      </div>
+
+      <a href="#pedido" class="btn btn-primary">Monte Seu Pedido</a>
+    </div>
+    <div class="hero-scroll">
+      <span></span>
+    </div>
+  </section>
+
+  <!-- ========== SABORES (GELATOS) ========== -->
+  <section class="section" id="sabores">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <span class="section-subtitle">Nossos Sabores</span>
+        <h2>Gelato Artesanal</h2>
+        <p class="section-desc">
+          Cada sabor e uma viagem pela tradicao italiana, feito com ingredientes frescos e naturais.
+        </p>
+      </div>
+      <div class="filter-bar animate-on-scroll" id="gelatoFilters"></div>
+      <div class="products-grid" id="gelatoGrid"></div>
+    </div>
+  </section>
+
+  <!-- ========== CHOCOLATES ========== -->
+  <section class="section section-alt" id="chocolates">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <span class="section-subtitle">Chocolates Finos</span>
+        <h2>Chocolates Artesanais</h2>
+        <p class="section-desc">
+          Chocolates elaborados com cacau de origem unica e tecnicas refinadas da alta confeitaria.
+        </p>
+      </div>
+      <div class="filter-bar animate-on-scroll" id="chocolateFilters"></div>
+      <div class="products-grid" id="chocolateGrid"></div>
+    </div>
+  </section>
+
+  <!-- ========== CAFETERIA ========== -->
+  <section class="section section-cream" id="cafeteria">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <span class="section-subtitle">Nossa Cafeteria</span>
+        <h2>Cafeteria Gantê</h2>
+        <p class="section-desc">
+          Cafés especiais, bebidas quentes e frias, e acompanhamentos para completar sua experiencia.
+        </p>
+      </div>
+      <div class="filter-bar animate-on-scroll" id="cafeteriaFilters"></div>
+      <div class="products-grid" id="cafeteriaGrid"></div>
+    </div>
+  </section>
+
+  <!-- ========== PEDIDO (ORDER BUILDER) ========== -->
+  <section class="section section-cream" id="pedido">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <span class="section-subtitle">Monte Seu Pedido</span>
+        <h2>Escolha e Personalize</h2>
+        <p class="section-desc">
+          Escolha o tamanho do seu gelato, selecione chocolates e itens da cafeteria. O sabor do gelato voce combina pelo WhatsApp!
+        </p>
+      </div>
+      <div class="order-builder animate-on-scroll">
+        <div class="order-tabs">
+          <button class="order-tab active" data-tab="gelato">Gelato</button>
+          <button class="order-tab" data-tab="chocolate">Chocolates</button>
+          <button class="order-tab" data-tab="diversos">Cafeteria</button>
+        </div>
+
+        <!-- GELATO TAB -->
+        <div class="order-content active" id="orderGelato">
+          <div class="order-config">
+            <h4>Escolha o Tamanho</h4>
+            <div class="size-selector" id="gelatoSizes"></div>
+
+            <!-- Cup image preview -->
+            <div class="gelato-cup-preview" id="gelatoCupPreview" style="display:none;">
+              <img id="gelatoCupImage" src="" alt="Imagem do copo selecionado">
+              <span id="gelatoCupSizeName" class="gelato-cup-size-label"></span>
+            </div>
+
+            <!-- Sabores do dia (apenas exibicao, sem selecao) -->
+            <div class="gelato-flavors-today" id="gelatoFlavorsToday" style="display:none;">
+              <h4>Sabores do Dia</h4>
+              <p class="gelato-flavors-today-desc">Escolha seu sabor na conversa pelo WhatsApp.</p>
+              <div class="gelato-flavors-today-grid" id="gelatoFlavorsTodayGrid"></div>
+            </div>
+
+            <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addGelatoBtn">
+              Adicionar ao Pedido
+            </button>
+          </div>
+        </div>
+
+        <!-- CHOCOLATE TAB -->
+        <div class="order-content" id="orderChocolate">
+          <div class="order-config">
+            <h4>Escolha os Chocolates e a Quantidade</h4>
+            <div class="flavor-grid" id="chocolateChoices"></div>
+
+            <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addChocolateBtn">
+              Adicionar ao Pedido
+            </button>
+          </div>
+        </div>
+
+        <!-- DIVERSOS TAB -->
+        <div class="order-content" id="orderDiversos">
+          <div class="order-config">
+            <h4>Cafeteria</h4>
+            <p style="font-size:0.9rem; color:rgba(15,59,46,0.6); margin-bottom:20px;">Adicione itens avulsos sem limite de quantidade.</p>
+            <div class="flavor-grid" id="diversosChoices"></div>
+
+            <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addDiversosBtn">
+              Adicionar ao Pedido
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESUMO DO PEDIDO (fora do builder, sempre visivel) -->
+      <div class="order-summary-standalone animate-on-scroll">
+        <div class="order-summary-panel" id="orderSummaryMain">
+          <h3>Resumo do Pedido</h3>
+          <div class="order-items" id="orderItems">
+            <div class="order-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+              </svg>
+              <p>Seu pedido esta vazio</p>
+            </div>
+          </div>
+          <div class="order-total" id="orderTotal" style="display:none;">
+            <span>Total</span>
+            <span id="totalValue">R$ 0,00</span>
+          </div>
+          <button class="btn btn-secondary" style="width:100%; margin-top:16px; display:none;" id="finalizarBtn">
+            Finalizar Pedido
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+   <!-- ========== HISTORIA ========== -->
+  <section class="section" id="historia">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <span class="section-subtitle">Sobre Nos</span>
+        <h2>Nossa Historia</h2>
+      </div>
+      <div class="historia-layout animate-on-scroll">
+        <div class="historia-text">
+          <h3>Uma História de Paixão e Fé</h3>
+          <p>
+            Tudo começou em 2009, quando Elaine, que desde pequena gostava de cozinhar junto de sua avó,
+            resolveu vender ovos de páscoa, e lá ela se encontrou! Achou uma profissão que realmente gostava,
+            porém, em 2013, teve de parar para cuidar de sua filha, Melissa.
+          </p>
+          <p>
+           Anos se passaram e ela sempre brincava que quando se aposentasse, abriria uma loja de chocolates, porém, os planos de Deus são outros, não é mesmo? Em 2020, diante de uma pregação, houve uma profecia que agarramos com força.
+          </p>
+          <p>
+           Elaine decidiu seguir seu sonho, e, quando todos estavam fechando, Elaine, na garagem de casa estava abrindo sua chocolateria com uma proposta diferente, uma chocolateria belga! Então decide fazer uma imersão na Bélgica, e lá acabou passando por Portugal, onde acabou tendo a ideia do gelato! Foi para a Itália e fez uma especialização avançada no tal! E hoje tem sua Chocolateria & Gelateria, um sonho realizado.
+          </p>
+          <p style="margin-top:24px;">
+            <a href="#pedido" class="btn btn-outline btn-sm">Conheca Nossos Produtos</a>
+          </p>
+        </div>
+        <div class="historia-image">
+          <img src="images/historia.jpg" alt="Preparo artesanal de gelato na Gantê">
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ========== CONTATO ========== -->
+  <section class="section section-alt" id="contato">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <span class="section-subtitle">Fale Conosco</span>
+        <h2>Contato</h2>
+        <p class="section-desc">
+          Tem alguma duvida ou quer fazer uma encomenda especial? Entre em contato conosco.
+        </p>
+      </div>
+      <div class="contact-layout animate-on-scroll">
+        <div class="contact-form">
+          <form id="contactForm" novalidate>
+            <div class="form-group">
+              <label for="contactName">Nome Completo</label>
+              <input type="text" id="contactName" placeholder="Seu nome" required>
+              <span class="error-msg">Por favor, informe seu nome.</span>
+            </div>
+            <div class="form-group">
+              <label for="contactPhone">Telefone</label>
+              <input type="tel" id="contactPhone" placeholder="(00) 00000-0000">
+              <span class="error-msg">Informe um telefone valido.</span>
+            </div>
+            <div class="form-group">
+              <label for="contactEmail">E-mail</label>
+              <input type="email" id="contactEmail" placeholder="seu@email.com" required>
+              <span class="error-msg">Informe um e-mail valido.</span>
+            </div>
+            <div class="form-group">
+              <label for="contactMessage">Mensagem</label>
+              <textarea id="contactMessage" placeholder="Escreva sua mensagem..." required></textarea>
+              <span class="error-msg">Por favor, escreva sua mensagem.</span>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">Enviar Mensagem</button>
+          </form>
+        </div>
+        <div class="contact-info">
+          <div class="contact-info-card">
+            <h4>Visite-nos</h4>
+            <div class="contact-info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <div>
+                <strong>Endereco</strong><br>
+                Rua UM, 251 - Centro<br>
+                Orlandia - SP, 14.620-000
+              </div>
+            </div>
+            <div class="contact-info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+              <div>
+                <strong>Telefone</strong><br>
+                (16) 98838-0171
+              </div>
+            </div>
+            <div class="contact-info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              <div>
+                <strong>E-mail</strong><br>
+                vendas@ganteartesanal.com.br
+              </div>
+            </div>
+          </div>
+          <div class="contact-info-card">
+            <h4>Horario de Funcionamento</h4>
+            <div class="contact-info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <div>
+                <strong>Segunda a Sexta</strong><br>
+                8h as 22h<br><br>
+                <strong>Sabado</strong><br>
+                9h as 22h<br><br>
+                <strong>Domingo</strong><br>
+                14h as 22h
+              </div>
+            </div>
+          </div>
+          <div class="social-links">
+            <a href="https://www.instagram.com/gantechocolates" class="social-link" title="Acesse o Instagram" aria-label="Instagram">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+            </a>
+            <a href="https://www.facebook.com/GanteChocolates" class="social-link" title="Acesse o Facebook" aria-label="Facebook">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+            </a>
+            <a href="https://wa.me/5516988380171" class="social-link social-whatsapp" title="Chame no WhatsApp" aria-label="WhatsApp" target="_blank" rel="noopener noreferrer">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            </a>
+            <a href="https://www.ifood.com.br/delivery/orlandia-sp/gante-chocolate-e-gelato-loteamento-sao-pedro/4be2beb8-dce2-4c9d-a46e-5506dad3bf50" class="social-link social-ifood" aria-label="iFood" title="Peca no iFood" target="_blank" rel="noopener noreferrer">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" role="img" xmlns="http://www.w3.org/2000/svg"><path d="M8.428 1.67c-4.65 0-7.184 4.149-7.184 6.998 0 2.294 2.2 3.299 4.25 3.299l-.006-.006c4.244 0 7.184-3.854 7.184-6.998 0-2.29-2.175-3.293-4.244-3.293zm11.328 0c-4.65 0-7.184 4.149-7.184 6.998 0 2.294 2.2 3.299 4.25 3.299l-.006-.006C21.061 11.96 24 8.107 24 4.963c0-2.29-2.18-3.293-4.244-3.293zM14.172 14.52l2.435 1.834c-2.17 2.07-6.124 3.525-9.353 3.17A8.913 8.913 0 01.23 14.541H0a9.598 9.598 0 008.828 7.758c3.814.24 7.323-.905 9.947-3.13l-.004.007 1.08 2.988 1.555-7.623-7.234-.02Z"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="#hero" class="nav-logo"><img src="images/logo-gante.png" alt="Gantê" class="nav-logo-img"></a>
+          <p>
+            Autentico gelato artesanal italiano e chocolates finos. 
+            Feito com paixao, servido com amor.<br>
+            VIVA O MOMENTO!
+          </p>
+        </div>
+        <div>
+          <h4>Navegacao</h4>
+          <div class="footer-links">
+            <a href="#sabores">Gelato</a>
+            <a href="#chocolates">Chocolates</a>
+            <a href="#cafeteria">Cafeteria</a>
+            <a href="#pedido">Monte Seu Pedido</a>
+            <a href="#historia">Nossa Historia</a>
+            <a href="#contato">Contato</a>
+          </div>
+        </div>
+        <div>
+          <h4>Categorias</h4>
+          <div class="footer-links" id="footerCategories">
+            <a href="#sabores">Gelatos</a>
+            <a href="#chocolates">Chocolates</a>
+            <a href="#pedido">Cafeteria</a>
+          </div>
+        </div>
+        <div>
+          <h4>Contato</h4>
+          <div class="footer-links">
+            <a href="#">Rua Um, 251</a>
+            <a href="#">Orlandia - SP</a>
+            <a href="#">(16) 98838-0171</a>
+            <a href="#">vendas@ganteartesanal.com.br</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Gantê Gelato Artesanal & Chocolates. Todos os direitos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========== MODAL ========== -->
+  <div class="modal-overlay" id="orderModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Confirmar Pedido</h3>
+        <button class="modal-close" id="modalClose" aria-label="Fechar">&times;</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast toast-success" id="toast"></div>
+
+  <!-- Scripts (cache bust: v4) -->
+  <script src="js/data.js?v=4"></script>
+  <script src="js/storage.js?v=4"></script>
+  <script src="js/main.js?v=4"></script>
+
+</body>
+</html>
