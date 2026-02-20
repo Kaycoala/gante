@@ -390,6 +390,10 @@ let orderState = {
   selectedChocos: {}, // { chocolateId: quantity }
   // Diversos state
   selectedDiversos: {}, // { diversoId: quantity }
+  // Linha Soft state
+  selectedSoft: {}, // { softId: quantity }
+  // Acai state
+  selectedAcai: {}, // { acaiId: quantity }
 };
 
 async function initOrderBuilder() {
@@ -398,6 +402,8 @@ async function initOrderBuilder() {
   await renderGelatoFlavorsToday();
   await renderChocolateChoices();
   await renderDiversosChoices();
+  await renderSoftChoices();
+  await renderAcaiChoices();
   initQtyControls();
   initAddButtonsMain();
   initFinalizeButtons();
@@ -411,6 +417,8 @@ function initOrderTabs() {
     gelato: 'orderGelato',
     chocolate: 'orderChocolate',
     diversos: 'orderDiversos',
+    soft: 'orderSoft',
+    acai: 'orderAcai',
   };
 
   tabs.forEach(tab => {
@@ -688,6 +696,272 @@ function updateDiversosSelection() {
   });
 }
 
+// ---- Soft Choices (com quantidade por item - sem limite) ----
+async function renderSoftChoices() {
+  const container = document.getElementById('softChoices');
+  const softProducts = await getProducts('soft');
+  const categories = await getCategories('soft');
+
+  // Group by category
+  const grouped = {};
+  const uncategorized = [];
+
+  softProducts.forEach(d => {
+    if (d.category) {
+      if (!grouped[d.category]) grouped[d.category] = [];
+      grouped[d.category].push(d);
+    } else {
+      uncategorized.push(d);
+    }
+  });
+
+  let html = '';
+
+  categories.forEach(cat => {
+    const items = grouped[cat.id] || [];
+    if (items.length === 0) return;
+    html += `<div class="diversos-category-label">${cat.name}</div>`;
+    html += items.map(d => renderSoftItem(d)).join('');
+  });
+
+  if (uncategorized.length > 0) {
+    if (categories.length > 0 && Object.keys(grouped).length > 0) {
+      html += `<div class="diversos-category-label">Outros</div>`;
+    }
+    html += uncategorized.map(d => renderSoftItem(d)).join('');
+  }
+
+  container.innerHTML = html;
+  bindSoftQtyEvents(container);
+  updateSoftSelection();
+}
+
+function renderSoftItem(d) {
+  const hasImg = d.imageUrl && d.imageUrl.length > 0;
+  const hue = hashStringToHue(d.name);
+  return `
+    <div class="choco-choice-item" data-id="${d.id}">
+      <div class="choco-choice-info">
+        ${hasImg
+          ? `<img class="flavor-thumb" src="${d.imageUrl}" alt="${d.name}">`
+          : `<span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>`
+        }
+        <span class="choco-choice-name">${d.name}</span>
+        <span class="choco-choice-price">${formatPrice(d.price)}/un</span>
+      </div>
+      <div class="choco-qty-control">
+        <button type="button" class="choco-qty-btn soft-qty-minus" data-id="${d.id}">-</button>
+        <span class="choco-qty-value" data-id="${d.id}">0</span>
+        <button type="button" class="choco-qty-btn soft-qty-plus" data-id="${d.id}">+</button>
+      </div>
+    </div>
+  `;
+}
+
+function bindSoftQtyEvents(container) {
+  container.querySelectorAll('.soft-qty-plus').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      orderState.selectedSoft[id] = (orderState.selectedSoft[id] || 0) + 1;
+      updateSoftSelection();
+    });
+  });
+
+  container.querySelectorAll('.soft-qty-minus').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (!orderState.selectedSoft[id] || orderState.selectedSoft[id] <= 0) return;
+      orderState.selectedSoft[id] -= 1;
+      if (orderState.selectedSoft[id] === 0) delete orderState.selectedSoft[id];
+      updateSoftSelection();
+    });
+  });
+}
+
+function updateSoftSelection() {
+  const container = document.getElementById('softChoices');
+
+  container.querySelectorAll('.choco-choice-item').forEach(item => {
+    const id = item.dataset.id;
+    const qty = orderState.selectedSoft[id] || 0;
+    const qtyDisplay = item.querySelector('.choco-qty-value[data-id="' + id + '"]');
+    if (qtyDisplay) qtyDisplay.textContent = qty;
+
+    item.classList.toggle('selected', qty > 0);
+  });
+}
+
+async function addSoftToOrder() {
+  const softProducts = await getProducts('soft');
+  const totalSelected = Object.values(orderState.selectedSoft).reduce((sum, qty) => sum + qty, 0);
+
+  if (totalSelected === 0) {
+    showToast('Selecione pelo menos um item.', 'error');
+    return;
+  }
+
+  const descParts = [];
+  let itemPrice = 0;
+
+  for (const [id, qty] of Object.entries(orderState.selectedSoft)) {
+    const d = softProducts.find(p => String(p.id) === String(id));
+    const name = d ? d.name : id;
+    const unitPrice = d ? d.price : 0;
+    itemPrice += unitPrice * qty;
+    descParts.push(qty > 1 ? `${name} (x${qty})` : name);
+  }
+
+  orderState.items.push({
+    id: 'oi' + Date.now(),
+    type: 'soft',
+    description: `Linha Soft - ${descParts.join(', ')}`,
+    qty: totalSelected,
+    price: itemPrice,
+  });
+
+  // Reset
+  orderState.selectedSoft = {};
+  updateSoftSelection();
+
+  updateOrderSummary();
+  showToast('Itens da Linha Soft adicionados ao pedido!', 'success');
+}
+
+// ---- Acai Choices (com quantidade por item - sem limite) ----
+async function renderAcaiChoices() {
+  const container = document.getElementById('acaiChoices');
+  const acaiProducts = await getProducts('acai');
+  const categories = await getCategories('acai');
+
+  // Group by category
+  const grouped = {};
+  const uncategorized = [];
+
+  acaiProducts.forEach(d => {
+    if (d.category) {
+      if (!grouped[d.category]) grouped[d.category] = [];
+      grouped[d.category].push(d);
+    } else {
+      uncategorized.push(d);
+    }
+  });
+
+  let html = '';
+
+  categories.forEach(cat => {
+    const items = grouped[cat.id] || [];
+    if (items.length === 0) return;
+    html += `<div class="diversos-category-label">${cat.name}</div>`;
+    html += items.map(d => renderAcaiItem(d)).join('');
+  });
+
+  if (uncategorized.length > 0) {
+    if (categories.length > 0 && Object.keys(grouped).length > 0) {
+      html += `<div class="diversos-category-label">Outros</div>`;
+    }
+    html += uncategorized.map(d => renderAcaiItem(d)).join('');
+  }
+
+  container.innerHTML = html;
+  bindAcaiQtyEvents(container);
+  updateAcaiSelection();
+}
+
+function renderAcaiItem(d) {
+  const hasImg = d.imageUrl && d.imageUrl.length > 0;
+  const hue = hashStringToHue(d.name);
+  return `
+    <div class="choco-choice-item" data-id="${d.id}">
+      <div class="choco-choice-info">
+        ${hasImg
+          ? `<img class="flavor-thumb" src="${d.imageUrl}" alt="${d.name}">`
+          : `<span class="flavor-color" style="background:hsl(${hue}, 25%, 78%)"></span>`
+        }
+        <span class="choco-choice-name">${d.name}</span>
+        <span class="choco-choice-price">${formatPrice(d.price)}/un</span>
+      </div>
+      <div class="choco-qty-control">
+        <button type="button" class="choco-qty-btn acai-qty-minus" data-id="${d.id}">-</button>
+        <span class="choco-qty-value" data-id="${d.id}">0</span>
+        <button type="button" class="choco-qty-btn acai-qty-plus" data-id="${d.id}">+</button>
+      </div>
+    </div>
+  `;
+}
+
+function bindAcaiQtyEvents(container) {
+  container.querySelectorAll('.acai-qty-plus').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      orderState.selectedAcai[id] = (orderState.selectedAcai[id] || 0) + 1;
+      updateAcaiSelection();
+    });
+  });
+
+  container.querySelectorAll('.acai-qty-minus').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (!orderState.selectedAcai[id] || orderState.selectedAcai[id] <= 0) return;
+      orderState.selectedAcai[id] -= 1;
+      if (orderState.selectedAcai[id] === 0) delete orderState.selectedAcai[id];
+      updateAcaiSelection();
+    });
+  });
+}
+
+function updateAcaiSelection() {
+  const container = document.getElementById('acaiChoices');
+
+  container.querySelectorAll('.choco-choice-item').forEach(item => {
+    const id = item.dataset.id;
+    const qty = orderState.selectedAcai[id] || 0;
+    const qtyDisplay = item.querySelector('.choco-qty-value[data-id="' + id + '"]');
+    if (qtyDisplay) qtyDisplay.textContent = qty;
+
+    item.classList.toggle('selected', qty > 0);
+  });
+}
+
+async function addAcaiToOrder() {
+  const acaiProducts = await getProducts('acai');
+  const totalSelected = Object.values(orderState.selectedAcai).reduce((sum, qty) => sum + qty, 0);
+
+  if (totalSelected === 0) {
+    showToast('Selecione pelo menos um item.', 'error');
+    return;
+  }
+
+  const descParts = [];
+  let itemPrice = 0;
+
+  for (const [id, qty] of Object.entries(orderState.selectedAcai)) {
+    const d = acaiProducts.find(p => String(p.id) === String(id));
+    const name = d ? d.name : id;
+    const unitPrice = d ? d.price : 0;
+    itemPrice += unitPrice * qty;
+    descParts.push(qty > 1 ? `${name} (x${qty})` : name);
+  }
+
+  orderState.items.push({
+    id: 'oi' + Date.now(),
+    type: 'acai',
+    description: `Acai - ${descParts.join(', ')}`,
+    qty: totalSelected,
+    price: itemPrice,
+  });
+
+  // Reset
+  orderState.selectedAcai = {};
+  updateAcaiSelection();
+
+  updateOrderSummary();
+  showToast('Itens de Acai adicionados ao pedido!', 'success');
+}
+
 // Quantity Controls (gelato qty removed - simple selection only)
 function initQtyControls() {
   // Gelato qty is always 1 now (no qty selector)
@@ -699,6 +973,8 @@ function initAddButtonsMain() {
   document.getElementById('addGelatoBtn').addEventListener('click', addGelatoToOrder);
   document.getElementById('addChocolateBtn').addEventListener('click', addChocolateToOrder);
   document.getElementById('addDiversosBtn').addEventListener('click', addDiversosToOrder);
+  document.getElementById('addSoftBtn').addEventListener('click', addSoftToOrder);
+  document.getElementById('addAcaiBtn').addEventListener('click', addAcaiToOrder);
 }
 
 async function addGelatoToOrder() {
@@ -1030,9 +1306,13 @@ function resetOrder() {
   orderState.items = [];
   orderState.selectedChocos = {};
   orderState.selectedDiversos = {};
+  orderState.selectedSoft = {};
+  orderState.selectedAcai = {};
   orderState.gelatoQty = 1;
   updateChocoSelection();
   updateDiversosSelection();
+  updateSoftSelection();
+  updateAcaiSelection();
   updateOrderSummary();
 }
 

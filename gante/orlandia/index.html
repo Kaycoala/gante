@@ -167,7 +167,7 @@
         <span class="section-subtitle">Monte Seu Pedido</span>
         <h2>Escolha e Personalize</h2>
         <p class="section-desc">
-          Escolha o tamanho do seu gelato, selecione chocolates e itens da cafeteria. O sabor do gelato voce combina pelo WhatsApp!
+          Escolha o tamanho do seu gelato, selecione chocolates, itens da cafeteria, linha soft e acai. O sabor do gelato voce combina pelo WhatsApp!
         </p>
       </div>
       <div class="order-builder animate-on-scroll">
@@ -175,6 +175,8 @@
           <button class="order-tab active" data-tab="gelato">Gelato</button>
           <button class="order-tab" data-tab="chocolate">Chocolates</button>
           <button class="order-tab" data-tab="diversos">Cafeteria</button>
+          <button class="order-tab" data-tab="soft">Linha Soft</button>
+          <button class="order-tab" data-tab="acai">Acai</button>
         </div>
 
         <!-- GELATO TAB -->
@@ -222,6 +224,32 @@
             <div class="flavor-grid" id="diversosChoices"></div>
 
             <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addDiversosBtn">
+              Adicionar ao Pedido
+            </button>
+          </div>
+        </div>
+
+        <!-- LINHA SOFT TAB -->
+        <div class="order-content" id="orderSoft">
+          <div class="order-config">
+            <h4>Linha Soft</h4>
+            <p style="font-size:0.9rem; color:rgba(15,59,46,0.6); margin-bottom:20px;">Escolha seus itens de soft serve e a quantidade desejada.</p>
+            <div class="flavor-grid" id="softChoices"></div>
+
+            <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addSoftBtn">
+              Adicionar ao Pedido
+            </button>
+          </div>
+        </div>
+
+        <!-- ACAI TAB -->
+        <div class="order-content" id="orderAcai">
+          <div class="order-config">
+            <h4>Acai</h4>
+            <p style="font-size:0.9rem; color:rgba(15,59,46,0.6); margin-bottom:20px;">Escolha seus acais e a quantidade desejada.</p>
+            <div class="flavor-grid" id="acaiChoices"></div>
+
+            <button class="btn btn-primary" style="margin-top:24px; width:100%;" id="addAcaiBtn">
               Adicionar ao Pedido
             </button>
           </div>
