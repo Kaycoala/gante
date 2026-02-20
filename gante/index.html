@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Gante Gelato Artesanal &amp; Chocolates - Escolha sua cidade: Orlandia ou Sumare.">
+  <meta name="theme-color" content="#0F3B2E">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Gante | Escolha Sua Cidade</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="images/icon.png">
+  <style>
+    /* ---- Landing Page Specific Styles ---- */
+    .landing-page {
+      position: relative;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: var(--color-primary);
+    }
+
+    .landing-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(var(--color-secondary-rgb), 0.6) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(var(--color-gold-rgb), 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(var(--color-secondary-rgb), 0.3) 0%, transparent 50%),
+        linear-gradient(180deg, var(--color-dark) 0%, var(--color-primary) 40%, var(--color-secondary) 100%);
+      z-index: 0;
+    }
+
+    .landing-pattern {
+      position: absolute;
+      inset: 0;
+      opacity: 0.04;
+      background-image:
+        radial-gradient(circle at 25% 25%, var(--color-gold) 1px, transparent 1px),
+        radial-gradient(circle at 75% 75%, var(--color-gold) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: 1;
+    }
+
+    .landing-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 0 24px;
+      width: 100%;
+      max-width: 720px;
+    }
+
+    .landing-logo {
+      display: block;
+      margin: 0 auto 20px;
+      height: clamp(36px, 6vw, 56px);
+      width: auto;
+      animation: fadeInDown 0.8s ease forwards;
+    }
+
+    .landing-title {
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      color: var(--color-cream);
+      font-weight: 700;
+      margin-bottom: 12px;
+      animation: fadeInUp 0.8s 0.2s ease forwards;
+      opacity: 0;
+    }
+
+    .landing-desc {
+      font-size: clamp(0.9rem, 2vw, 1.1rem);
+      color: rgba(var(--color-cream-rgb), 0.7);
+      margin-bottom: 40px;
+      line-height: 1.7;
+      animation: fadeInUp 0.8s 0.4s ease forwards;
+      opacity: 0;
+    }
+
+    /* Loading state */
+    .landing-loading {
+      animation: fadeInUp 0.8s 0.5s ease forwards;
+      opacity: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .landing-loading.hidden { display: none; }
+
+    .landing-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(var(--color-cream-rgb), 0.15);
+      border-top-color: var(--color-gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .landing-loading-text {
+      font-size: 0.9rem;
+      color: rgba(var(--color-cream-rgb), 0.6);
+      font-weight: 500;
+    }
+
+    /* City cards */
+    .city-cards {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      animation: fadeInUp 0.8s 0.5s ease forwards;
+      opacity: 0;
+    }
+
+    .city-cards.hidden { display: none; }
+
+    .city-card {
+      flex: 1;
+      max-width: 300px;
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1.5px solid rgba(var(--color-gold-rgb), 0.2);
+      border-radius: var(--radius-xl);
+      padding: 36px 28px;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition-base);
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .city-card:hover {
+      background: rgba(var(--color-gold-rgb), 0.12);
+      border-color: rgba(var(--color-gold-rgb), 0.5);
+      transform: translateY(-6px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .city-card-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(var(--color-gold-rgb), 0.12);
+      border: 1.5px solid rgba(var(--color-gold-rgb), 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-gold);
+      flex-shrink: 0;
+    }
+
+    .city-card-name {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-cream);
+    }
+
+    .city-card-region {
+      font-size: 0.85rem;
+      color: rgba(var(--color-cream-rgb), 0.5);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+
+    .city-card-cta {
+      margin-top: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-gold);
+      transition: gap var(--transition-fast);
+    }
+
+    .city-card:hover .city-card-cta {
+      gap: 10px;
+    }
+
+    /* Remember checkbox */
+    .landing-remember {
+      margin-top: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      animation: fadeInUp 0.8s 0.7s ease forwards;
+      opacity: 0;
+    }
+
+    .landing-remember.hidden { display: none; }
+
+    .landing-remember input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--color-gold);
+      cursor: pointer;
+    }
+
+    .landing-remember label {
+      font-size: 0.82rem;
+      color: rgba(var(--color-cream-rgb), 0.5);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Error / geo denied message */
+    .landing-geo-msg {
+      font-size: 0.82rem;
+      color: rgba(var(--color-cream-rgb), 0.4);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .landing-geo-msg.hidden { display: none; }
+
+    .landing-geo-msg svg {
+      flex-shrink: 0;
+    }
+
+    /* Footer */
+    .landing-footer {
+      position: absolute;
+      bottom: 24px;
+      left: 0;
+      right: 0;
+      z-index: 2;
+      text-align: center;
+    }
+
+    .landing-footer p {
+      font-size: 0.75rem;
+      color: rgba(var(--color-cream-rgb), 0.3);
+    }
+
+    /* Responsive */
+    @media (max-width: 540px) {
+      .city-cards {
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .city-card {
+        max-width: 100%;
+        width: 100%;
+        padding: 28px 24px;
+      }
+
+      .landing-content {
+        padding: 0 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="landing-page">
+    <div class="landing-bg"></div>
+    <div class="landing-pattern"></div>
+
+    <div class="landing-content">
+      <img src="images/logo-gante.png" alt="Gante" class="landing-logo">
+
+      <h1 class="landing-title">Escolha Sua Cidade</h1>
+      <p class="landing-desc">
+        Selecione a unidade mais perto de voce para ver nosso cardapio completo.
+      </p>
+
+      <!-- Loading state (shown while geo-locating) -->
+      <div class="landing-loading" id="landingLoading">
+        <div class="landing-spinner"></div>
+        <span class="landing-loading-text">Encontrando a loja mais perto de voce...</span>
+      </div>
+
+      <!-- Geo error message -->
+      <div class="landing-geo-msg hidden" id="landingGeoMsg">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
+        </svg>
+        <span id="landingGeoMsgText"></span>
+      </div>
+
+      <!-- City selection cards -->
+      <div class="city-cards hidden" id="cityCards">
+        <a href="orlandia/" class="city-card" id="cardOrlandia" onclick="handleCityClick('orlandia', event)">
+          <div class="city-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <span class="city-card-name">Orlandia</span>
+          <span class="city-card-region">Sao Paulo - SP</span>
+          <span class="city-card-cta">
+            Ver cardapio
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14m-7-7 7 7-7 7"/>
+            </svg>
+          </span>
+        </a>
+
+        <a href="sumare/" class="city-card" id="cardSumare" onclick="handleCityClick('sumare', event)">
+          <div class="city-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <span class="city-card-name">Sumare</span>
+          <span class="city-card-region">Sao Paulo - SP</span>
+          <span class="city-card-cta">
+            Ver cardapio
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14m-7-7 7 7-7 7"/>
+            </svg>
+          </span>
+        </a>
+      </div>
+
+      <!-- Remember choice checkbox -->
+      <div class="landing-remember hidden" id="landingRemember">
+        <input type="checkbox" id="rememberChoice" checked>
+        <label for="rememberChoice">Lembrar minha escolha</label>
+      </div>
+    </div>
+
+    <div class="landing-footer">
+      <p>&copy; 2026 Gante Gelato Artesanal &amp; Chocolates. Todos os direitos reservados.</p>
+    </div>
+  </div>
+
+  <script>
+    // ---- Coordinates ----
+    const CITIES = {
+      orlandia: { lat: -20.7266, lng: -47.8866, label: 'Orlandia' },
+      sumare:   { lat: -22.8206, lng: -47.2671, label: 'Sumare' }
+    };
+
+    // ---- DOM refs ----
+    const elLoading    = document.getElementById('landingLoading');
+    const elCards      = document.getElementById('cityCards');
+    const elRemember   = document.getElementById('landingRemember');
+    const elGeoMsg     = document.getElementById('landingGeoMsg');
+    const elGeoMsgText = document.getElementById('landingGeoMsgText');
+    const chkRemember  = document.getElementById('rememberChoice');
+
+    // ---- Haversine distance (km) ----
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    // ---- Helpers ----
+    function showCards(geoMessage) {
+      elLoading.classList.add('hidden');
+      elCards.classList.remove('hidden');
+      elRemember.classList.remove('hidden');
+
+      if (geoMessage) {
+        elGeoMsgText.textContent = geoMessage;
+        elGeoMsg.classList.remove('hidden');
+      }
+    }
+
+    function redirectTo(city) {
+      window.location.href = city + '/';
+    }
+
+    // ---- City click handler ----
+    function handleCityClick(city, event) {
+      if (chkRemember.checked) {
+        try {
+          localStorage.setItem('gante_city', city);
+        } catch (e) { /* ignore storage errors */ }
+      }
+      // Let the default <a> navigation happen
+    }
+
+    // ---- Main logic ----
+    (function init() {
+      // 1. Check localStorage for saved preference
+      try {
+        var saved = localStorage.getItem('gante_city');
+        if (saved && CITIES[saved]) {
+          redirectTo(saved);
+          return;
+        }
+      } catch (e) { /* ignore */ }
+
+      // 2. Try geolocation
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          function onSuccess(pos) {
+            var lat = pos.coords.latitude;
+            var lng = pos.coords.longitude;
+
+            var distOrlandia = haversine(lat, lng, CITIES.orlandia.lat, CITIES.orlandia.lng);
+            var distSumare   = haversine(lat, lng, CITIES.sumare.lat, CITIES.sumare.lng);
+
+            var closest = distOrlandia <= distSumare ? 'orlandia' : 'sumare';
+
+            // Save and redirect
+            try { localStorage.setItem('gante_city', closest); } catch (e) {}
+            redirectTo(closest);
+          },
+          function onError(err) {
+            // Geo denied or failed -- show manual selection
+            var msg = 'Nao conseguimos detectar sua localizacao. Escolha manualmente.';
+            if (err.code === 1) {
+              msg = 'Localizacao bloqueada. Escolha sua cidade abaixo.';
+            }
+            showCards(msg);
+          },
+          { timeout: 6000, maximumAge: 300000 }
+        );
+
+        // Timeout fallback (in case onError is never called)
+        setTimeout(function() {
+          if (elCards.classList.contains('hidden') && !elLoading.classList.contains('hidden')) {
+            showCards('Tempo esgotado. Escolha sua cidade abaixo.');
+          }
+        }, 7000);
+      } else {
+        // No geolocation API
+        showCards('Seu navegador nao suporta geolocalizacao. Escolha sua cidade abaixo.');
+      }
+    })();
+  </script>
+
+</body>
+</html>
