@@ -1,0 +1,12 @@
+# Robots.txt - Gante Gelato Artesanal e Chocolates
+
+User-agent: *
+Allow: /
+
+# Block admin pages from indexing
+Disallow: /admin.html
+Disallow: /orlandia/admin.html
+Disallow: /sumare/admin.html
+
+# Sitemap
+Sitemap: https://ganteartesanal.com.br/sitemap.xml
