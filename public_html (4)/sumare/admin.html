@@ -317,13 +317,25 @@
           </div>
         </div>
         <div class="form-group">
-          <label for="prodImageFile">Arquivo da Imagem</label>
-          <input type="text" id="prodImageFile" placeholder="Ex: stracciatella.jpg">
-          <small style="display:block; margin-top:4px; color:rgba(15,59,46,0.5); font-size:0.8rem;">
-            Coloque a imagem na pasta <code style="background:rgba(232,217,197,0.5); padding:1px 6px; border-radius:3px;">images/produtos/</code> e digite o nome do arquivo com extensao.
-          </small>
-          <div id="imagePreviewWrap" style="display:none; margin-top:12px; text-align:center;">
-            <img id="imagePreview" alt="Preview" style="max-height:150px; border-radius:8px; margin:0 auto;">
+          <label for="prodImageUpload">Imagem do Produto</label>
+          <div class="image-upload-area" id="prodImageUploadArea">
+            <input type="file" id="prodImageUpload" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
+            <input type="hidden" id="prodImagePath">
+            <div id="imagePreviewWrap" class="image-preview-wrap" style="display:none;">
+              <img id="imagePreview" alt="Preview">
+              <button type="button" class="image-remove-btn" id="prodImageRemoveBtn" title="Remover imagem">&times;</button>
+            </div>
+            <div id="imageUploadPlaceholder" class="image-upload-placeholder">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+              </svg>
+              <span>Clique ou arraste uma imagem</span>
+              <small>JPG, PNG, GIF ou WebP (max 5MB)</small>
+            </div>
+            <div id="imageUploadProgress" class="image-upload-progress" style="display:none;">
+              <div class="progress-bar"><div class="progress-fill" id="imageProgressFill"></div></div>
+              <span id="imageProgressText">Enviando...</span>
+            </div>
           </div>
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%;">Salvar</button>
@@ -359,11 +371,26 @@
           </div>
         </div>
         <div class="form-group">
-          <label for="divImageFile">Arquivo da Imagem</label>
-          <input type="text" id="divImageFile" placeholder="Ex: casquinha.jpg">
-          <small style="display:block; margin-top:4px; color:rgba(15,59,46,0.5); font-size:0.8rem;">
-            Coloque a imagem na pasta <code style="background:rgba(232,217,197,0.5); padding:1px 6px; border-radius:3px;">images/produtos/</code> e digite o nome do arquivo.
-          </small>
+          <label for="divImageUpload">Imagem do Item</label>
+          <div class="image-upload-area" id="divImageUploadArea">
+            <input type="file" id="divImageUpload" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
+            <input type="hidden" id="divImagePath">
+            <div id="divImagePreviewWrap" class="image-preview-wrap" style="display:none;">
+              <img id="divImagePreview" alt="Preview">
+              <button type="button" class="image-remove-btn" id="divImageRemoveBtn" title="Remover imagem">&times;</button>
+            </div>
+            <div id="divImageUploadPlaceholder" class="image-upload-placeholder">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+              </svg>
+              <span>Clique ou arraste uma imagem</span>
+              <small>JPG, PNG, GIF ou WebP (max 5MB)</small>
+            </div>
+            <div id="divImageUploadProgress" class="image-upload-progress" style="display:none;">
+              <div class="progress-bar"><div class="progress-fill" id="divImageProgressFill"></div></div>
+              <span id="divImageProgressText">Enviando...</span>
+            </div>
+          </div>
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%;">Salvar</button>
       </form>

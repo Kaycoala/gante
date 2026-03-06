@@ -113,33 +113,216 @@ function initMobileSidebar() {
   });
 }
 
-// ---- Image Filename Preview ----
+// ---- Image Upload System ----
 function initImageUpload() {
-  const fileInput = document.getElementById('prodImageFile');
-  const previewWrap = document.getElementById('imagePreviewWrap');
-  const previewImg = document.getElementById('imagePreview');
+  // Inicializar area de upload do modal de produtos
+  initUploadArea({
+    areaId: 'prodImageUploadArea',
+    fileInputId: 'prodImageUpload',
+    pathInputId: 'prodImagePath',
+    previewWrapId: 'imagePreviewWrap',
+    previewImgId: 'imagePreview',
+    placeholderId: 'imageUploadPlaceholder',
+    progressId: 'imageUploadProgress',
+    progressFillId: 'imageProgressFill',
+    progressTextId: 'imageProgressText',
+    removeBtnId: 'prodImageRemoveBtn',
+  });
 
-  // Mostra preview ao digitar o nome do arquivo
-  fileInput.addEventListener('input', () => {
-    const filename = fileInput.value.trim();
-    if (filename) {
-      const imagePath = (typeof SITE_BASE_URL !== 'undefined' ? SITE_BASE_URL : 'https://ganteartesanal.com.br') + '/images/produtos/' + filename;
-      previewImg.src = imagePath;
-      previewImg.onerror = () => {
-        previewWrap.style.display = 'none';
-      };
-      previewImg.onload = () => {
-        previewWrap.style.display = 'block';
-      };
-    } else {
-      previewWrap.style.display = 'none';
-    }
+  // Inicializar area de upload do modal de diversos
+  initUploadArea({
+    areaId: 'divImageUploadArea',
+    fileInputId: 'divImageUpload',
+    pathInputId: 'divImagePath',
+    previewWrapId: 'divImagePreviewWrap',
+    previewImgId: 'divImagePreview',
+    placeholderId: 'divImageUploadPlaceholder',
+    progressId: 'divImageUploadProgress',
+    progressFillId: 'divImageProgressFill',
+    progressTextId: 'divImageProgressText',
+    removeBtnId: 'divImageRemoveBtn',
   });
 }
 
+function initUploadArea(config) {
+  const area = document.getElementById(config.areaId);
+  const fileInput = document.getElementById(config.fileInputId);
+  const pathInput = document.getElementById(config.pathInputId);
+  const previewWrap = document.getElementById(config.previewWrapId);
+  const previewImg = document.getElementById(config.previewImgId);
+  const placeholder = document.getElementById(config.placeholderId);
+  const progress = document.getElementById(config.progressId);
+  const progressFill = document.getElementById(config.progressFillId);
+  const progressText = document.getElementById(config.progressTextId);
+  const removeBtn = document.getElementById(config.removeBtnId);
+
+  if (!area || !fileInput) return;
+
+  // Clique na area abre seletor de arquivo
+  placeholder.addEventListener('click', () => fileInput.click());
+
+  // Drag and drop
+  area.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    area.classList.add('dragover');
+  });
+
+  area.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    area.classList.remove('dragover');
+  });
+
+  area.addEventListener('drop', (e) => {
+    e.preventDefault();
+    area.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileUpload(files[0], config);
+    }
+  });
+
+  // Selecao de arquivo
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) {
+      handleFileUpload(fileInput.files[0], config);
+    }
+  });
+
+  // Botao remover
+  if (removeBtn) {
+    removeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearUploadArea(config);
+    });
+  }
+}
+
+function handleFileUpload(file, config) {
+  const pathInput = document.getElementById(config.pathInputId);
+  const previewWrap = document.getElementById(config.previewWrapId);
+  const previewImg = document.getElementById(config.previewImgId);
+  const placeholder = document.getElementById(config.placeholderId);
+  const progress = document.getElementById(config.progressId);
+  const progressFill = document.getElementById(config.progressFillId);
+  const progressText = document.getElementById(config.progressTextId);
+
+  // Validar tipo de arquivo
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    showToast('Tipo de arquivo nao permitido. Use JPG, PNG, GIF ou WebP.', 'error');
+    return;
+  }
+
+  // Validar tamanho (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('Arquivo muito grande. Maximo: 5MB.', 'error');
+    return;
+  }
+
+  // Mostrar progresso
+  placeholder.style.display = 'none';
+  previewWrap.style.display = 'none';
+  progress.style.display = 'flex';
+  progressFill.style.width = '0%';
+  progressText.textContent = 'Enviando...';
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const xhr = new XMLHttpRequest();
+
+  // Funcao para mostrar erro
+  function showUploadError(msg) {
+    progress.style.display = 'none';
+    placeholder.style.display = 'flex';
+    showToast(msg || 'Erro ao enviar imagem.', 'error');
+  }
+
+  // Progresso do upload
+  xhr.upload.addEventListener('progress', (e) => {
+    if (e.lengthComputable) {
+      const percent = Math.round((e.loaded / e.total) * 100);
+      progressFill.style.width = percent + '%';
+      progressText.textContent = `Enviando... ${percent}%`;
+    }
+  });
+
+  // Completar upload
+  xhr.addEventListener('load', () => {
+    if (xhr.status >= 200 && xhr.status < 300) {
+      try {
+        const response = JSON.parse(xhr.responseText);
+        if (response.success) {
+          // Sucesso - mostrar preview
+          progress.style.display = 'none';
+          previewImg.src = response.url;
+          previewImg.onload = () => {
+            previewWrap.style.display = 'flex';
+          };
+          pathInput.value = response.path;
+          showToast('Imagem enviada com sucesso!');
+        } else {
+          showUploadError(response.error || 'Erro ao enviar imagem.');
+        }
+      } catch (parseErr) {
+        showUploadError('Resposta invalida do servidor.');
+      }
+    } else {
+      let errorMsg = 'Erro ao enviar imagem.';
+      try {
+        const response = JSON.parse(xhr.responseText);
+        errorMsg = response.error || errorMsg;
+      } catch (e) {}
+      showUploadError(errorMsg);
+    }
+  });
+
+  xhr.addEventListener('error', () => {
+    showUploadError('Falha na conexao com o servidor.');
+  });
+
+  xhr.addEventListener('abort', () => {
+    showUploadError('Upload cancelado.');
+  });
+
+  // Usar API_BASE se definido (em storage.js), senao usar /api
+  const uploadUrl = (typeof API_BASE !== 'undefined' ? API_BASE : '/api') + '/upload.php';
+  xhr.open('POST', uploadUrl);
+  xhr.send(formData);
+}
+
+function clearUploadArea(config) {
+  const fileInput = document.getElementById(config.fileInputId);
+  const pathInput = document.getElementById(config.pathInputId);
+  const previewWrap = document.getElementById(config.previewWrapId);
+  const placeholder = document.getElementById(config.placeholderId);
+  const progress = document.getElementById(config.progressId);
+
+  fileInput.value = '';
+  pathInput.value = '';
+  previewWrap.style.display = 'none';
+  progress.style.display = 'none';
+  placeholder.style.display = 'flex';
+}
+
 function resetImageUpload() {
-  document.getElementById('prodImageFile').value = '';
-  document.getElementById('imagePreviewWrap').style.display = 'none';
+  clearUploadArea({
+    fileInputId: 'prodImageUpload',
+    pathInputId: 'prodImagePath',
+    previewWrapId: 'imagePreviewWrap',
+    placeholderId: 'imageUploadPlaceholder',
+    progressId: 'imageUploadProgress',
+  });
+}
+
+function resetDiversosImageUpload() {
+  clearUploadArea({
+    fileInputId: 'divImageUpload',
+    pathInputId: 'divImagePath',
+    previewWrapId: 'divImagePreviewWrap',
+    placeholderId: 'divImageUploadPlaceholder',
+    progressId: 'divImageUploadProgress',
+  });
 }
 
 // Gera hue a partir do nome (mesma funcao do main.js)
@@ -442,9 +625,8 @@ function initProductModal() {
     const editId = document.getElementById('prodEditId').value;
     const type = document.getElementById('prodEditType').value;
 
-    // Determinar nome do arquivo da imagem
-    const imageFile = document.getElementById('prodImageFile').value.trim();
-    const imageUrl = imageFile ? 'images/produtos/' + imageFile : '';
+    // Obter caminho da imagem do campo hidden (preenchido pelo upload)
+    const imagePath = document.getElementById('prodImagePath').value.trim();
 
     const productData = {
       name: document.getElementById('prodName').value.trim(),
@@ -452,7 +634,7 @@ function initProductModal() {
       price: parseFloat(document.getElementById('prodPrice').value),
       category: document.getElementById('prodCategory').value,
       type: type,
-      imageUrl: imageUrl,
+      imageUrl: imagePath,
     };
 
     let result;
@@ -505,19 +687,26 @@ async function openProductModal(type, productId = null) {
     document.getElementById('prodPrice').value = product.price;
     document.getElementById('prodCategory').value = product.category;
 
-    // Se ja tem imagem, preencher o campo com o nome do arquivo
+    // Se ja tem imagem, mostrar preview
     if (product.imageUrl && product.imageUrl.length > 0) {
-      // Extrair apenas o nome do arquivo do path
-      const filename = product.imageUrl.replace(/^(https?:\/\/[^/]+\/)?(images\/produtos\/)?/, '');
-      document.getElementById('prodImageFile').value = filename;
+      // Extrair o caminho relativo da imagem
+      const relativePath = product.imageUrl.replace(/^https?:\/\/[^/]+\//, '');
+      document.getElementById('prodImagePath').value = relativePath;
+      
       // Usar URL absoluta para o preview
       const previewSrc = product.imageUrl.startsWith('http') ? product.imageUrl : ((typeof SITE_BASE_URL !== 'undefined' ? SITE_BASE_URL : 'https://ganteartesanal.com.br') + '/' + product.imageUrl);
-      document.getElementById('imagePreview').src = previewSrc;
-      document.getElementById('imagePreview').onload = () => {
-        document.getElementById('imagePreviewWrap').style.display = 'block';
+      const previewImg = document.getElementById('imagePreview');
+      const previewWrap = document.getElementById('imagePreviewWrap');
+      const placeholder = document.getElementById('imageUploadPlaceholder');
+      
+      previewImg.src = previewSrc;
+      previewImg.onload = () => {
+        previewWrap.style.display = 'flex';
+        placeholder.style.display = 'none';
       };
-      document.getElementById('imagePreview').onerror = () => {
-        document.getElementById('imagePreviewWrap').style.display = 'none';
+      previewImg.onerror = () => {
+        previewWrap.style.display = 'none';
+        placeholder.style.display = 'flex';
       };
     }
   } else {
@@ -539,17 +728,17 @@ function initDiversosModal() {
   const closeBtn = document.getElementById('diversosModalClose');
   const form = document.getElementById('diversosForm');
 
-  closeBtn.addEventListener('click', () => closeModal('diversosModal'));
+  closeBtn.addEventListener('click', () => { closeModal('diversosModal'); resetDiversosImageUpload(); });
   modal.addEventListener('click', (e) => {
-    if (e.target === modal) closeModal('diversosModal');
+    if (e.target === modal) { closeModal('diversosModal'); resetDiversosImageUpload(); }
   });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const editId = document.getElementById('divEditId').value;
 
-    const imageFile = document.getElementById('divImageFile').value.trim();
-    const imageUrl = imageFile ? 'images/produtos/' + imageFile : '';
+    // Obter caminho da imagem do campo hidden (preenchido pelo upload)
+    const imagePath = document.getElementById('divImagePath').value.trim();
 
     const productData = {
       name: document.getElementById('divName').value.trim(),
@@ -557,7 +746,7 @@ function initDiversosModal() {
       price: parseFloat(document.getElementById('divPrice').value),
       category: document.getElementById('divCategory').value || null,
       type: 'diversos',
-      imageUrl: imageUrl,
+      imageUrl: imagePath,
     };
 
     let result;
@@ -580,11 +769,14 @@ function initDiversosModal() {
     }
 
     closeModal('diversosModal');
+    resetDiversosImageUpload();
     await refreshTables();
   });
 }
 
 async function openDiversosModal(productId = null) {
+  // Reset image upload primeiro
+  resetDiversosImageUpload();
   const modal = document.getElementById('diversosModal');
   const title = document.getElementById('diversosModalTitle');
   const form = document.getElementById('diversosForm');
@@ -604,11 +796,25 @@ async function openDiversosModal(productId = null) {
     document.getElementById('divDescription').value = product.description;
     document.getElementById('divPrice').value = product.price;
     document.getElementById('divCategory').value = product.category || '';
-    if (product.imageUrl) {
-      const filename = product.imageUrl.replace(/^(https?:\/\/[^/]+\/)?(images\/produtos\/)?/, '');
-      document.getElementById('divImageFile').value = filename;
-    } else {
-      document.getElementById('divImageFile').value = '';
+    // Se ja tem imagem, mostrar preview
+    if (product.imageUrl && product.imageUrl.length > 0) {
+      const relativePath = product.imageUrl.replace(/^https?:\/\/[^/]+\//, '');
+      document.getElementById('divImagePath').value = relativePath;
+      
+      const previewSrc = product.imageUrl.startsWith('http') ? product.imageUrl : ((typeof SITE_BASE_URL !== 'undefined' ? SITE_BASE_URL : 'https://ganteartesanal.com.br') + '/' + product.imageUrl);
+      const previewImg = document.getElementById('divImagePreview');
+      const previewWrap = document.getElementById('divImagePreviewWrap');
+      const placeholder = document.getElementById('divImageUploadPlaceholder');
+      
+      previewImg.src = previewSrc;
+      previewImg.onload = () => {
+        previewWrap.style.display = 'flex';
+        placeholder.style.display = 'none';
+      };
+      previewImg.onerror = () => {
+        previewWrap.style.display = 'none';
+        placeholder.style.display = 'flex';
+      };
     }
   } else {
     title.textContent = 'Novo Item de Cafeteria';

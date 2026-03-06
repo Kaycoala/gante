@@ -2617,6 +2617,124 @@ p {
   cursor: not-allowed;
 }
 
+/* ---- Image Upload Area ---- */
+.image-upload-area {
+  position: relative;
+  border: 2px dashed rgba(var(--color-primary-rgb), 0.25);
+  border-radius: var(--radius-md);
+  background: rgba(var(--color-cream-rgb), 0.3);
+  transition: all var(--transition-fast);
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-upload-area:hover,
+.image-upload-area.dragover {
+  border-color: var(--color-gold);
+  background: rgba(var(--color-gold-rgb), 0.08);
+}
+
+.image-upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  cursor: pointer;
+  color: rgba(var(--color-primary-rgb), 0.5);
+  text-align: center;
+}
+
+.image-upload-placeholder svg {
+  opacity: 0.4;
+}
+
+.image-upload-placeholder span {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.image-upload-placeholder small {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.image-preview-wrap {
+  position: relative;
+  padding: 16px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-preview-wrap img {
+  max-height: 200px;
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  object-fit: contain;
+}
+
+.image-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+  border: none;
+}
+
+.image-remove-btn:hover {
+  background: #a82315;
+  transform: scale(1.1);
+}
+
+.image-upload-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+  width: 100%;
+}
+
+.image-upload-progress .progress-bar {
+  width: 100%;
+  max-width: 200px;
+  height: 6px;
+  background: rgba(var(--color-primary-rgb), 0.15);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.image-upload-progress .progress-fill {
+  height: 100%;
+  background: var(--color-gold);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.2s ease;
+}
+
+.image-upload-progress span {
+  font-size: 0.85rem;
+  color: rgba(var(--color-primary-rgb), 0.6);
+}
+
 .pagination-info {
   font-size: 0.85rem;
   color: rgba(var(--color-primary-rgb), 0.5);
